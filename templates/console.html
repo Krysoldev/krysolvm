@@ -1,0 +1,1040 @@
+<!DOCTYPE html>
+<html lang="en" data-bs-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ panel_name }} · VPS Console</title>
+    <!-- Bootstrap 5 Darkly theme -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome 6 -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Xterm.js for terminal emulation -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/xterm@5.3.0/css/xterm.min.css" />
+    <!-- Socket.IO client -->
+    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+    
+    <style>
+        /* ==================== PREMIUM CONSOLE STYLES ==================== */
+        
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                transform: translateY(-30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        @keyframes pulse {
+            0%, 100% {
+                transform: scale(1);
+                opacity: 1;
+            }
+            50% {
+                transform: scale(1.2);
+                opacity: 0.7;
+            }
+        }
+        
+        @keyframes glowPulse {
+            0%, 100% {
+                box-shadow: 0 0 5px rgba(102, 126, 234, 0.3);
+            }
+            50% {
+                box-shadow: 0 0 20px rgba(102, 126, 234, 0.6);
+            }
+        }
+        
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+        
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.4; }
+        }
+        
+        @keyframes borderFlow {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+        
+        @keyframes shimmer {
+            0% {
+                background-position: -200% 0;
+            }
+            100% {
+                background-position: 200% 0;
+            }
+        }
+        
+        :root {
+            --bg-dark: #0a0c10;
+            --bg-darker: #0c0e12;
+            --bg-elevated: #111316;
+            --border-color: rgba(255, 255, 255, 0.08);
+            --accent-cyan: #4facfe;
+            --accent-green: #34d399;
+            --accent-red: #ef4444;
+            --accent-yellow: #fbbf24;
+            --text-primary: #e1e9f0;
+            --text-muted: #9ca3af;
+            --gradient-primary: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            --gradient-success: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+            --gradient-danger: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+        }
+        
+        * {
+            box-sizing: border-box;
+        }
+        
+        body {
+            background: linear-gradient(135deg, var(--bg-darker) 0%, #0a0c10 100%);
+            color: var(--text-primary);
+            font-family: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace;
+            height: 100vh;
+            overflow: hidden;
+            padding: 0;
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        /* Top bar with premium styling */
+        .console-topbar {
+            background: linear-gradient(135deg, rgba(17, 19, 22, 0.98) 0%, rgba(26, 28, 32, 0.98) 100%);
+            border-bottom: 1px solid var(--border-color);
+            padding: 0.75rem 1.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-shrink: 0;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+            animation: slideDown 0.5s ease-out;
+        }
+        
+        .vps-badge {
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.15) 0%, rgba(118, 75, 162, 0.15) 100%);
+            padding: 0.5rem 1.25rem;
+            border-radius: 12px;
+            font-size: 0.95rem;
+            border: 1px solid rgba(102, 126, 234, 0.3);
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            transition: all 0.3s ease;
+        }
+        
+        .vps-badge:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(102, 126, 234, 0.3);
+        }
+        
+        .vps-badge i {
+            color: #667eea;
+            font-size: 1.1rem;
+            animation: glowPulse 2s ease-in-out infinite;
+        }
+        
+        .conn-status {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            background: rgba(17, 19, 22, 0.8);
+            padding: 0.5rem 1.25rem;
+            border-radius: 12px;
+            border: 1px solid var(--border-color);
+            backdrop-filter: blur(10px);
+            transition: all 0.3s ease;
+        }
+        
+        .status-led {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+        
+        .status-led::before {
+            content: '';
+            position: absolute;
+            inset: -4px;
+            border-radius: 50%;
+            background: inherit;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+        
+        .status-led.connected {
+            background: var(--accent-green);
+            box-shadow: 0 0 12px rgba(52, 211, 153, 0.6);
+            animation: pulse 2s ease-in-out infinite;
+        }
+        
+        .status-led.connected::before {
+            opacity: 0.3;
+            animation: pulse 2s ease-in-out infinite;
+        }
+        
+        .status-led.disconnected {
+            background: var(--accent-red);
+        }
+        
+        .status-led.connecting {
+            background: var(--accent-yellow);
+            animation: blink 1s ease-in-out infinite;
+        }
+        
+        .conn-status span {
+            font-size: 0.9rem;
+            font-weight: 600;
+        }
+        
+        .control-buttons {
+            display: flex;
+            gap: 0.5rem;
+        }
+        
+        .control-buttons .btn {
+            background: rgba(17, 19, 22, 0.8);
+            border: 1px solid var(--border-color);
+            color: var(--text-primary);
+            border-radius: 10px;
+            padding: 0.5rem 1rem;
+            font-size: 0.875rem;
+            transition: all 0.3s ease;
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .control-buttons .btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+            transition: left 0.5s ease;
+        }
+        
+        .control-buttons .btn:hover::before {
+            left: 100%;
+        }
+        
+        .control-buttons .btn:hover {
+            background: rgba(102, 126, 234, 0.2);
+            border-color: rgba(102, 126, 234, 0.5);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 16px rgba(102, 126, 234, 0.3);
+        }
+        
+        .control-buttons .btn-exit {
+            background: linear-gradient(135deg, rgba(239, 68, 68, 0.2) 0%, rgba(220, 38, 38, 0.2) 100%);
+            border-color: rgba(239, 68, 68, 0.4);
+        }
+        
+        .control-buttons .btn-exit:hover {
+            background: linear-gradient(135deg, rgba(239, 68, 68, 0.3) 0%, rgba(220, 38, 38, 0.3) 100%);
+            border-color: rgba(239, 68, 68, 0.6);
+            box-shadow: 0 8px 16px rgba(239, 68, 68, 0.4);
+        }
+        
+        /* Terminal area */
+        #terminal-container {
+            flex: 1;
+            background: var(--bg-darker);
+            padding: 12px;
+            overflow: hidden;
+            position: relative;
+            animation: fadeIn 0.5s ease-out;
+        }
+        
+        #terminal-container::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, rgba(102, 126, 234, 0.3), transparent);
+            animation: borderFlow 3s ease-in-out infinite;
+            background-size: 200% 100%;
+        }
+        
+        .xterm {
+            height: 100%;
+            padding: 8px;
+            border-radius: 12px;
+            background: rgba(12, 14, 18, 0.8);
+            border: 1px solid var(--border-color);
+            transition: all 0.3s ease;
+        }
+        
+        .xterm:hover {
+            border-color: rgba(102, 126, 234, 0.3);
+            box-shadow: 0 0 20px rgba(102, 126, 234, 0.1);
+        }
+        
+        .xterm-viewport {
+            overflow-y: auto !important;
+            scrollbar-width: thin;
+            scrollbar-color: rgba(102, 126, 234, 0.3) rgba(17, 19, 22, 0.5);
+        }
+        
+        .xterm-viewport::-webkit-scrollbar {
+            width: 10px;
+        }
+        
+        .xterm-viewport::-webkit-scrollbar-track {
+            background: rgba(17, 19, 22, 0.5);
+            border-radius: 5px;
+        }
+        
+        .xterm-viewport::-webkit-scrollbar-thumb {
+            background: rgba(102, 126, 234, 0.3);
+            border-radius: 5px;
+            border: 2px solid rgba(17, 19, 22, 0.5);
+            transition: background 0.3s ease;
+        }
+        
+        .xterm-viewport::-webkit-scrollbar-thumb:hover {
+            background: rgba(102, 126, 234, 0.6);
+        }
+        
+        /* Footer */
+        .console-footer {
+            background: linear-gradient(135deg, rgba(17, 19, 22, 0.98) 0%, rgba(26, 28, 32, 0.98) 100%);
+            border-top: 1px solid var(--border-color);
+            padding: 0.75rem 1.5rem;
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            display: flex;
+            gap: 2.5rem;
+            flex-wrap: wrap;
+            flex-shrink: 0;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.2);
+            animation: slideUp 0.5s ease-out;
+        }
+        
+        .footer-hint {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            transition: all 0.3s ease;
+        }
+        
+        .footer-hint:hover {
+            color: #667eea;
+            transform: translateX(3px);
+        }
+        
+        .footer-hint i {
+            width: 20px;
+            color: #667eea;
+            opacity: 0.7;
+            transition: all 0.3s ease;
+        }
+        
+        .footer-hint:hover i {
+            opacity: 1;
+            transform: scale(1.1);
+        }
+        
+        /* SSH login overlay */
+        .ssh-login-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(10, 12, 16, 0.95);
+            backdrop-filter: blur(8px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+            transition: opacity 0.3s ease;
+            animation: fadeIn 0.3s ease;
+        }
+        
+        .ssh-login-card {
+            background: linear-gradient(135deg, rgba(17, 19, 22, 0.98) 0%, rgba(26, 28, 32, 0.98) 100%);
+            border-radius: 28px;
+            width: 450px;
+            max-width: 90vw;
+            padding: 2.5rem;
+            border: 1px solid rgba(102, 126, 234, 0.2);
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5), 0 0 40px rgba(102, 126, 234, 0.1);
+            animation: slideUp 0.4s ease-out;
+            transition: all 0.3s ease;
+        }
+        
+        .ssh-login-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 30px 60px -12px rgba(0, 0, 0, 0.6);
+            border-color: rgba(102, 126, 234, 0.4);
+        }
+        
+        .ssh-login-card h3 {
+            font-weight: 700;
+            margin-bottom: 2rem;
+            color: var(--text-primary);
+            font-size: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+        
+        .ssh-login-card h3 i {
+            color: #667eea;
+            font-size: 1.75rem;
+            animation: glowPulse 2s ease-in-out infinite;
+        }
+        
+        .form-label {
+            font-weight: 600;
+            font-size: 0.875rem;
+            color: var(--text-primary);
+            margin-bottom: 0.5rem;
+            display: block;
+        }
+        
+        .form-control, .input-group-text {
+            background-color: rgba(17, 19, 22, 0.8);
+            border: 1px solid var(--border-color);
+            color: var(--text-primary);
+            font-size: 0.95rem;
+            transition: all 0.3s ease;
+        }
+        
+        .form-control {
+            padding: 0.75rem 1rem;
+            border-radius: 10px;
+        }
+        
+        .form-control:focus {
+            background-color: rgba(17, 19, 22, 0.95);
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.15);
+            outline: none;
+            transform: scale(1.01);
+        }
+        
+        .input-group-text {
+            border-radius: 10px 0 0 10px;
+            border-right: none;
+            padding: 0.75rem 1rem;
+        }
+        
+        .input-group .form-control {
+            border-radius: 0 10px 10px 0;
+            border-left: none;
+        }
+        
+        .input-group-text i {
+            color: #667eea;
+            width: 18px;
+            text-align: center;
+            transition: transform 0.3s ease;
+        }
+        
+        .form-control:focus + .input-group-text i {
+            transform: scale(1.2);
+        }
+        
+        .btn-connect {
+            background: var(--gradient-primary);
+            border: none;
+            width: 100%;
+            padding: 0.875rem;
+            font-weight: 700;
+            border-radius: 12px;
+            transition: all 0.3s ease;
+            font-size: 1rem;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .btn-connect::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+            transition: left 0.5s ease;
+        }
+        
+        .btn-connect:hover::before {
+            left: 100%;
+        }
+        
+        .btn-connect:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(102, 126, 234, 0.4);
+        }
+        
+        .small-note {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            margin-top: 1.5rem;
+            text-align: center;
+            padding: 1rem;
+            background: rgba(102, 126, 234, 0.05);
+            border-radius: 10px;
+            border: 1px solid rgba(102, 126, 234, 0.1);
+            transition: all 0.3s ease;
+        }
+        
+        .small-note:hover {
+            background: rgba(102, 126, 234, 0.1);
+            transform: translateY(-2px);
+        }
+        
+        .small-note i {
+            color: #667eea;
+            margin-right: 0.5rem;
+        }
+        
+        /* Toast Notifications */
+        .toast-notification {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: linear-gradient(135deg, #1a1c20, #111316);
+            border-left: 4px solid;
+            border-radius: 12px;
+            padding: 1rem 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            z-index: 3000;
+            animation: slideUp 0.3s ease;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+        }
+        
+        .toast-notification.success { border-left-color: #10b981; }
+        .toast-notification.error { border-left-color: #ef4444; }
+        .toast-notification.warning { border-left-color: #f59e0b; }
+        .toast-notification.info { border-left-color: #3b82f6; }
+        
+        /* Loading Spinner */
+        .loading-spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 2px solid rgba(255,255,255,0.3);
+            border-top-color: white;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+        
+        .d-none {
+            display: none !important;
+        }
+        
+        /* Mobile responsive */
+        @media (max-width: 768px) {
+            .console-topbar {
+                padding: 0.5rem 1rem;
+                flex-direction: column;
+                gap: 0.75rem;
+            }
+            
+            .vps-badge {
+                font-size: 0.85rem;
+                padding: 0.4rem 1rem;
+            }
+            
+            .control-buttons {
+                width: 100%;
+                justify-content: space-between;
+            }
+            
+            .control-buttons .btn {
+                flex: 1;
+                justify-content: center;
+                padding: 0.5rem;
+                font-size: 0.8rem;
+            }
+            
+            .console-footer {
+                padding: 0.5rem 1rem;
+                gap: 1rem;
+                font-size: 0.7rem;
+            }
+            
+            .footer-hint {
+                flex: 1 1 45%;
+            }
+            
+            .ssh-login-card {
+                padding: 2rem 1.5rem;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- SSH connection overlay -->
+    <div id="sshOverlay" class="ssh-login-overlay">
+        <div class="ssh-login-card">
+            <h3><i class="fa-solid fa-terminal me-2"></i>Connect to VPS</h3>
+            <div class="mb-3">
+                <label class="form-label">Host / IP</label>
+                <div class="input-group">
+                    <span class="input-group-text"><i class="fa-solid fa-network-wired"></i></span>
+                    <input type="text" class="form-control" id="sshHost" placeholder="e.g. 192.168.1.100" value="{{ vps_ip or '' }}">
+                </div>
+            </div>
+            <div class="mb-3">
+                <label class="form-label">Port</label>
+                <div class="input-group">
+                    <span class="input-group-text"><i class="fa-regular fa-plug"></i></span>
+                    <input type="number" class="form-control" id="sshPort" value="22" min="1" max="65535">
+                </div>
+            </div>
+            <div class="mb-3">
+                <label class="form-label">Username</label>
+                <div class="input-group">
+                    <span class="input-group-text"><i class="fa-regular fa-user"></i></span>
+                    <input type="text" class="form-control" id="sshUser" value="root">
+                </div>
+            </div>
+            <div class="mb-4">
+                <label class="form-label">Password</label>
+                <div class="input-group">
+                    <span class="input-group-text"><i class="fa-solid fa-lock"></i></span>
+                    <input type="password" class="form-control" id="sshPass" placeholder="••••••••">
+                </div>
+            </div>
+            <button class="btn btn-connect btn-primary" id="connectBtn">
+                <i class="fa-regular fa-paper-plane me-2"></i>Establish SSH session
+            </button>
+            <div class="small-note">
+                <i class="fa-regular fa-circle-info"></i> 
+                Your credentials are sent only to your VPS — we never store them.
+            </div>
+        </div>
+    </div>
+
+    <!-- Top bar -->
+    <div class="console-topbar">
+        <div class="d-flex align-items-center gap-3">
+            <div class="vps-badge">
+                <i class="fa-solid fa-cube"></i> {{ vps.container_name }}
+                <span class="badge bg-dark ms-2">{{ vps.os_version }}</span>
+            </div>
+            <div class="conn-status" id="connStatus">
+                <span class="status-led" id="statusLed"></span>
+                <span id="statusText">Disconnected</span>
+            </div>
+        </div>
+        <div class="control-buttons">
+            <button class="btn" id="fullscreenBtn" title="Toggle fullscreen (F11)"><i class="fa-regular fa-window-maximize"></i></button>
+            <button class="btn" id="reconnectBtn" title="Reconnect"><i class="fa-solid fa-rotate-right"></i></button>
+            <button class="btn btn-exit" id="exitBtn" title="Exit console"><i class="fa-regular fa-circle-xmark"></i> Exit</button>
+        </div>
+    </div>
+
+    <!-- Terminal lives here -->
+    <div id="terminal-container"></div>
+
+    <!-- Footer hints -->
+    <div class="console-footer">
+        <span class="footer-hint"><i class="fa-regular fa-keyboard"></i> Ctrl+C / Ctrl+Z work natively</span>
+        <span class="footer-hint"><i class="fa-regular fa-clipboard"></i> Paste: Ctrl+Shift+V / right-click</span>
+        <span class="footer-hint"><i class="fa-regular fa-arrow-left"></i> Disconnect does NOT stop your VPS</span>
+        <span class="footer-hint"><i class="fa-solid fa-terminal"></i> WebSocket Secure Connection</span>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/xterm@5.3.0/lib/xterm.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/xterm-addon-fit@0.8.0/lib/xterm-addon-fit.min.js"></script>
+
+    <script>
+        (function() {
+            // Configuration
+            const vpsId = {{ vps.id }};
+            const socket = io(window.location.origin, {
+                transports: ['websocket', 'polling'],
+                path: '/socket.io'
+            });
+
+            // Xterm terminal
+            const term = new Terminal({
+                cursorBlink: true,
+                cursorStyle: 'block',
+                fontSize: 14,
+                fontFamily: 'JetBrains Mono, Fira Code, monospace',
+                theme: {
+                    background: '#0c0e12',
+                    foreground: '#e6eef9',
+                    cursor: '#0dcaf0',
+                    selectionBackground: '#2d4c7c',
+                    black: '#2e343a',
+                    red: '#f07178',
+                    green: '#a3d6a3',
+                    yellow: '#ffcb6b',
+                    blue: '#5fa3e0',
+                    magenta: '#d39ad4',
+                    cyan: '#7fdbdb',
+                    white: '#eef4f9',
+                },
+                scrollback: 5000,
+                tabStopWidth: 4,
+            });
+
+            const fitAddon = new FitAddon.FitAddon();
+            term.loadAddon(fitAddon);
+
+            // DOM elements
+            const overlay = document.getElementById('sshOverlay');
+            const statusLed = document.getElementById('statusLed');
+            const statusText = document.getElementById('statusText');
+            const connectBtn = document.getElementById('connectBtn');
+            const sshHost = document.getElementById('sshHost');
+            const sshPort = document.getElementById('sshPort');
+            const sshUser = document.getElementById('sshUser');
+            const sshPass = document.getElementById('sshPass');
+            const reconnectBtn = document.getElementById('reconnectBtn');
+            const exitBtn = document.getElementById('exitBtn');
+            const fullscreenBtn = document.getElementById('fullscreenBtn');
+            const terminalContainer = document.getElementById('terminal-container');
+
+            // State
+            let connected = false;
+            let connecting = false;
+            let connectionInfo = null;
+            let reconnectAttempts = 0;
+            const maxReconnectAttempts = 5;
+
+            function showToast(message, type = 'info') {
+                const toast = document.createElement('div');
+                toast.className = `toast-notification ${type}`;
+                let icon = 'fa-info-circle';
+                if (type === 'success') icon = 'fa-check-circle';
+                if (type === 'error') icon = 'fa-exclamation-circle';
+                if (type === 'warning') icon = 'fa-exclamation-triangle';
+                toast.innerHTML = `<i class="fas ${icon}"></i> ${message}`;
+                document.body.appendChild(toast);
+                setTimeout(() => toast.remove(), 4000);
+            }
+
+            function setStatus(state, msg) {
+                statusLed.className = 'status-led';
+                if (state === 'connected') {
+                    statusLed.classList.add('connected');
+                    statusText.innerText = msg || 'Connected';
+                } else if (state === 'connecting') {
+                    statusLed.classList.add('connecting');
+                    statusText.innerText = msg || 'Connecting...';
+                } else if (state === 'disconnected') {
+                    statusLed.classList.add('disconnected');
+                    statusText.innerText = msg || 'Disconnected';
+                }
+            }
+
+            function openTerminal() {
+                term.open(terminalContainer);
+                fitAddon.fit();
+                term.focus();
+            }
+
+            openTerminal();
+
+            async function fetchConnectionDetails() {
+                try {
+                    setStatus('connecting', 'Preparing connection...');
+                    term.writeln('\x1b[36m[ Fetching SSH connection details... ]\x1b[0m\r\n');
+                    
+                    const response = await fetch(`/vps/${vpsId}/console/connect`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' }
+                    });
+                    
+                    const data = await response.json();
+                    
+                    if (data.success) {
+                        connectionInfo = data.connection;
+                        sshHost.value = connectionInfo.host;
+                        sshPort.value = connectionInfo.port;
+                        sshUser.value = connectionInfo.username;
+                        sshPass.value = connectionInfo.password;
+                        
+                        term.writeln('\x1b[32m✓ Connection details retrieved\x1b[0m');
+                        if (data.port_created) {
+                            term.writeln('\x1b[33m✓ SSH port forward created automatically\x1b[0m');
+                        }
+                        term.writeln('\x1b[36m✓ Password retrieved from VPS\x1b[0m');
+                        term.writeln('\r\n\x1b[1mReady to connect!\x1b[0m\r\n');
+                        
+                        setStatus('disconnected', 'Ready to connect');
+                        
+                        setTimeout(() => {
+                            if (!connected && !connecting) {
+                                term.writeln('\x1b[36m[ Auto-connecting in 3 seconds... Press any key to cancel ]\x1b[0m\r\n');
+                                let autoConnectTimer = setTimeout(() => {
+                                    initiateConnection();
+                                }, 3000);
+                                
+                                const cancelAutoConnect = () => {
+                                    clearTimeout(autoConnectTimer);
+                                    term.writeln('\x1b[33m[ Auto-connect cancelled ]\x1b[0m\r\n');
+                                    term.off('key', cancelAutoConnect);
+                                };
+                                term.on('key', cancelAutoConnect);
+                            }
+                        }, 1000);
+                        
+                    } else {
+                        term.writeln('\x1b[31m✗ Failed to get connection details: ' + data.error + '\x1b[0m\r\n');
+                        term.writeln('\x1b[33mPlease enter connection details manually.\x1b[0m\r\n');
+                        setStatus('disconnected', 'Manual setup required');
+                    }
+                } catch (error) {
+                    console.error('Failed to fetch connection details:', error);
+                    term.writeln('\x1b[31m✗ Error: ' + error.message + '\x1b[0m\r\n');
+                    term.writeln('\x1b[33mPlease enter connection details manually.\x1b[0m\r\n');
+                    setStatus('disconnected', 'Manual setup required');
+                }
+            }
+
+            fetchConnectionDetails();
+
+            // Socket event handlers
+            socket.on('connect', () => {
+                console.log('Socket.io connected');
+            });
+
+            socket.on('ssh_connected', (data) => {
+                console.log('SSH channel established', data);
+                connecting = false;
+                connected = true;
+                overlay.classList.add('d-none');
+                setStatus('connected', `SSH ${data.username}@${data.host}:${data.port}`);
+                term.clear();
+                term.writeln('\x1b[1;32m╔═══════════════════════════════════════════════════════════╗\x1b[0m');
+                term.writeln('\x1b[1;32m║           Connected to ' + '{{ vps.container_name }}'.padEnd(32) + '║\x1b[0m');
+                term.writeln('\x1b[1;32m╚═══════════════════════════════════════════════════════════╝\x1b[0m\r\n');
+                term.focus();
+                showToast('SSH connection established', 'success');
+            });
+
+            socket.on('ssh_output', (data) => {
+                term.write(data);
+            });
+
+            socket.on('ssh_error', (err) => {
+                console.error('SSH error:', err.error);
+                connecting = false;
+                connected = false;
+                setStatus('disconnected', 'Error');
+                overlay.classList.remove('d-none');
+                term.writeln('\r\n\x1b[1;31m╔═══════════════════════════════════════════════════════════╗\x1b[0m');
+                term.writeln('\x1b[1;31m║                    SSH CONNECTION ERROR                    ║\x1b[0m');
+                term.writeln('\x1b[1;31m╚═══════════════════════════════════════════════════════════╝\x1b[0m');
+                term.writeln('\r\n\x1b[31m' + (err.error || 'Connection failed') + '\x1b[0m');
+                term.writeln('\r\n\x1b[33mPlease check credentials and try again.\x1b[0m\r\n');
+                showToast(err.error || 'Connection failed', 'error');
+            });
+
+            socket.on('ssh_disconnected', () => {
+                console.log('SSH disconnected by server');
+                connected = false;
+                connecting = false;
+                setStatus('disconnected', 'Disconnected');
+                overlay.classList.remove('d-none');
+                term.writeln('\r\n\x1b[33m╔═══════════════════════════════════════════════════════════╗\x1b[0m');
+                term.writeln('\x1b[33m║                   Session Terminated                       ║\x1b[0m');
+                term.writeln('\x1b[33m╚═══════════════════════════════════════════════════════════╝\x1b[0m\r\n');
+                showToast('SSH session terminated', 'warning');
+            });
+
+            socket.on('disconnect', () => {
+                if (connected) {
+                    connected = false;
+                    connecting = false;
+                    setStatus('disconnected', 'Socket lost');
+                    term.writeln('\x1b[1;31m\r\n[!] Connection to panel lost. Reconnecting...\x1b[0m');
+                    showToast('Connection to panel lost', 'warning');
+                }
+            });
+
+            term.onData(data => {
+                if (!connected) return;
+                socket.emit('ssh_input', { vps_id: vpsId, input: data });
+            });
+
+            function initiateConnection() {
+                if (connecting) return;
+                const host = sshHost.value.trim();
+                const port = parseInt(sshPort.value, 10) || 22;
+                const user = sshUser.value.trim() || 'root';
+                const pass = sshPass.value.trim();
+
+                if (!host) {
+                    showToast('Please enter VPS IP or hostname', 'warning');
+                    sshHost.style.animation = 'shake 0.5s ease';
+                    setTimeout(() => sshHost.style.animation = '', 500);
+                    return;
+                }
+                if (!pass) {
+                    showToast('Password is required', 'warning');
+                    sshPass.style.animation = 'shake 0.5s ease';
+                    setTimeout(() => sshPass.style.animation = '', 500);
+                    return;
+                }
+
+                connecting = true;
+                connected = false;
+                setStatus('connecting', 'SSH handshake');
+                overlay.classList.add('d-none');
+
+                term.clear();
+                term.writeln('\x1b[36m╔═══════════════════════════════════════════════════════════╗\x1b[0m');
+                term.writeln('\x1b[36m║              Establishing SSH Connection...                ║\x1b[0m');
+                term.writeln('\x1b[36m╚═══════════════════════════════════════════════════════════╝\x1b[0m');
+                term.writeln('\r\n\x1b[36mConnecting to ' + user + '@' + host + ':' + port + ' ...\x1b[0m\r\n');
+
+                socket.emit('ssh_connect', {
+                    vps_id: vpsId,
+                    host: host,
+                    port: port,
+                    username: user,
+                    password: pass
+                });
+            }
+
+            connectBtn.addEventListener('click', initiateConnection);
+
+            reconnectBtn.addEventListener('click', () => {
+                if (connected) {
+                    socket.emit('ssh_disconnect', { vps_id: vpsId });
+                }
+                connected = false;
+                connecting = false;
+                overlay.classList.remove('d-none');
+                setStatus('disconnected', 'Ready');
+                term.clear();
+                fetchConnectionDetails();
+                showToast('Reconnecting...', 'info');
+            });
+
+            exitBtn.addEventListener('click', () => {
+                if (connected) {
+                    socket.emit('ssh_disconnect', { vps_id: vpsId });
+                }
+                window.location.href = `/vps/${vpsId}`;
+            });
+
+            fullscreenBtn.addEventListener('click', () => {
+                if (!document.fullscreenElement) {
+                    document.documentElement.requestFullscreen();
+                    fullscreenBtn.innerHTML = '<i class="fa-solid fa-compress"></i>';
+                } else {
+                    document.exitFullscreen();
+                    fullscreenBtn.innerHTML = '<i class="fa-regular fa-window-maximize"></i>';
+                }
+            });
+
+            document.addEventListener('fullscreenchange', () => {
+                if (document.fullscreenElement) {
+                    fullscreenBtn.innerHTML = '<i class="fa-solid fa-compress"></i>';
+                } else {
+                    fullscreenBtn.innerHTML = '<i class="fa-regular fa-window-maximize"></i>';
+                }
+                setTimeout(() => fitAddon.fit(), 100);
+            });
+
+            window.addEventListener('resize', () => {
+                if (term && fitAddon) {
+                    fitAddon.fit();
+                    if (connected) {
+                        const dims = fitAddon.proposeDimensions();
+                        if (dims) {
+                            socket.emit('ssh_resize', {
+                                vps_id: vpsId,
+                                cols: dims.cols,
+                                rows: dims.rows
+                            });
+                        }
+                    }
+                }
+            });
+
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'F11') {
+                    e.preventDefault();
+                    fullscreenBtn.click();
+                }
+                if (e.ctrlKey && e.shiftKey && e.key === 'V') {
+                    e.preventDefault();
+                    navigator.clipboard.readText().then(text => {
+                        if (connected && text) {
+                            socket.emit('ssh_input', { vps_id: vpsId, input: text });
+                            showToast('Pasted from clipboard', 'success');
+                        }
+                    }).catch(() => {});
+                }
+            });
+
+            sshPass.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    connectBtn.click();
+                }
+            });
+
+            setStatus('disconnected', 'Initializing...');
+
+            window.addEventListener('beforeunload', () => {
+                if (connected) {
+                    socket.emit('ssh_disconnect', { vps_id: vpsId });
+                }
+            });
+
+            // Add shake animation
+            const style = document.createElement('style');
+            style.textContent = `
+                @keyframes shake {
+                    0%, 100% { transform: translateX(0); }
+                    10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
+                    20%, 40%, 60%, 80% { transform: translateX(5px); }
+                }
+            `;
+            document.head.appendChild(style);
+        })();
+    </script>
+</body>
+</html>

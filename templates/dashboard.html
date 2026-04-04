@@ -1,0 +1,1471 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - {{ panel_name }}{% endblock %}
+
+{% block header_title %}Dashboard{% endblock %}
+
+{% block breadcrumbs %}
+<div class="breadcrumb">
+    <a href="{{ url_for('dashboard') }}" class="breadcrumb-item">Home</a>
+    <span class="breadcrumb-separator"><i class="fas fa-chevron-right"></i></span>
+    <span class="breadcrumb-item active">Dashboard</span>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* Premium Dashboard Styles */
+    :root {
+        --gradient-primary: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        --gradient-success: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+        --gradient-warning: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        --gradient-info: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+        --gradient-danger: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+        --glow-primary: 0 0 20px rgba(102, 126, 234, 0.4);
+        --glow-success: 0 0 20px rgba(17, 153, 142, 0.4);
+    }
+    
+    /* Animated Background */
+    .dashboard-container {
+        position: relative;
+        animation: fadeIn 0.6s ease-in;
+    }
+    
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(20px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+    
+    /* Hero Welcome Section */
+    .hero-welcome {
+        background: var(--gradient-primary);
+        border-radius: 24px;
+        padding: 3rem 2rem;
+        margin-bottom: 2rem;
+        color: white;
+        position: relative;
+        overflow: hidden;
+        box-shadow: 0 20px 60px rgba(102, 126, 234, 0.3);
+    }
+    
+    .hero-welcome::before {
+        content: '';
+        position: absolute;
+        top: -50%;
+        right: -10%;
+        width: 400px;
+        height: 400px;
+        background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
+        border-radius: 50%;
+        animation: float 6s ease-in-out infinite;
+    }
+    
+    @keyframes float {
+        0%, 100% { transform: translateY(0) rotate(0deg); }
+        50% { transform: translateY(-20px) rotate(5deg); }
+    }
+    
+    .hero-content {
+        position: relative;
+        z-index: 1;
+    }
+    
+    .hero-welcome h1 {
+        font-size: 2.5rem;
+        font-weight: 800;
+        margin-bottom: 0.75rem;
+        text-shadow: 0 2px 10px rgba(0,0,0,0.2);
+    }
+    
+    .hero-welcome .subtitle {
+        font-size: 1.125rem;
+        opacity: 0.95;
+        margin-bottom: 2rem;
+        font-weight: 400;
+    }
+    
+    .hero-actions {
+        display: flex;
+        gap: 1rem;
+        flex-wrap: wrap;
+    }
+    
+    .hero-btn {
+        padding: 0.875rem 2rem;
+        border-radius: 12px;
+        font-weight: 600;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        transition: all 0.3s ease;
+        border: 2px solid rgba(255,255,255,0.3);
+        background: rgba(255,255,255,0.15);
+        backdrop-filter: blur(10px);
+        color: white;
+    }
+    
+    .hero-btn:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+        background: rgba(255,255,255,0.25);
+        border-color: rgba(255,255,255,0.5);
+    }
+    
+    .hero-btn.primary {
+        background: white;
+        color: #667eea;
+        border-color: white;
+    }
+    
+    .hero-btn.primary:hover {
+        background: rgba(255,255,255,0.95);
+        box-shadow: 0 10px 30px rgba(255,255,255,0.3);
+    }
+    
+    /* Premium Stat Cards */
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 1.5rem;
+        margin-bottom: 2rem;
+    }
+    
+    .premium-stat-card {
+        background: var(--card-bg);
+        border-radius: 20px;
+        padding: 2rem;
+        position: relative;
+        overflow: hidden;
+        border: 1px solid var(--border-color);
+        transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        cursor: pointer;
+    }
+    
+    .premium-stat-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 4px;
+        background: var(--gradient);
+        opacity: 0;
+        transition: opacity 0.3s ease;
+    }
+    
+    .premium-stat-card:hover {
+        transform: translateY(-8px) scale(1.02);
+        box-shadow: 0 20px 40px rgba(0,0,0,0.4);
+        border-color: transparent;
+    }
+    
+    .premium-stat-card:hover::before {
+        opacity: 1;
+    }
+    
+    .stat-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        margin-bottom: 1.5rem;
+    }
+    
+    .stat-icon-wrapper {
+        width: 64px;
+        height: 64px;
+        border-radius: 16px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: var(--gradient);
+        box-shadow: var(--glow);
+        animation: pulse 2s ease-in-out infinite;
+    }
+    
+    @keyframes pulse {
+        0%, 100% { transform: scale(1); }
+        50% { transform: scale(1.05); }
+    }
+    
+    .stat-icon-wrapper i {
+        font-size: 1.75rem;
+        color: white;
+    }
+    
+    .stat-trend {
+        display: flex;
+        align-items: center;
+        gap: 0.25rem;
+        font-size: 0.875rem;
+        padding: 0.25rem 0.75rem;
+        border-radius: 20px;
+        background: rgba(16, 185, 129, 0.1);
+        color: #10b981;
+        font-weight: 600;
+    }
+    
+    .stat-body {
+        margin-bottom: 1rem;
+    }
+    
+    .stat-label {
+        font-size: 0.875rem;
+        color: var(--text-muted);
+        font-weight: 500;
+        margin-bottom: 0.5rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+    
+    .stat-value {
+        font-size: 2.5rem;
+        font-weight: 800;
+        color: var(--text-primary);
+        line-height: 1;
+        margin-bottom: 0.75rem;
+        background: linear-gradient(135deg, var(--text-primary) 0%, var(--text-muted) 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+    }
+    
+    .stat-footer {
+        display: flex;
+        gap: 0.5rem;
+        flex-wrap: wrap;
+    }
+    
+    .stat-badge {
+        padding: 0.375rem 0.75rem;
+        border-radius: 8px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        background: rgba(59, 130, 246, 0.1);
+        color: #3b82f6;
+        border: 1px solid rgba(59, 130, 246, 0.2);
+    }
+    
+    .stat-badge.success {
+        background: rgba(16, 185, 129, 0.1);
+        color: #10b981;
+        border-color: rgba(16, 185, 129, 0.2);
+    }
+    
+    .stat-badge.warning {
+        background: rgba(245, 158, 11, 0.1);
+        color: #f59e0b;
+        border-color: rgba(245, 158, 11, 0.2);
+    }
+    
+    /* Quick Actions Premium */
+    .quick-actions-premium {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+        gap: 1rem;
+        margin-bottom: 2rem;
+    }
+    
+    .action-card {
+        background: var(--card-bg);
+        border: 1px solid var(--border-color);
+        border-radius: 16px;
+        padding: 1.75rem 1.25rem;
+        text-align: center;
+        text-decoration: none;
+        color: var(--text-primary);
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        position: relative;
+        overflow: hidden;
+    }
+    
+    .action-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: var(--gradient-primary);
+        opacity: 0;
+        transition: opacity 0.3s ease;
+    }
+    
+    .action-card:hover {
+        transform: translateY(-6px);
+        box-shadow: 0 15px 35px rgba(0,0,0,0.3);
+        border-color: transparent;
+    }
+    
+    .action-card:hover::before {
+        opacity: 0.1;
+    }
+    
+    .action-card-content {
+        position: relative;
+        z-index: 1;
+    }
+    
+    .action-icon {
+        width: 56px;
+        height: 56px;
+        margin: 0 auto 1rem;
+        border-radius: 14px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: var(--gradient);
+        box-shadow: 0 8px 16px rgba(0,0,0,0.2);
+        transition: transform 0.3s ease;
+    }
+    
+    .action-card:hover .action-icon {
+        transform: scale(1.1) rotate(5deg);
+    }
+    
+    .action-icon i {
+        font-size: 1.5rem;
+        color: white;
+    }
+    
+    .action-title {
+        font-weight: 700;
+        font-size: 0.9rem;
+        color: var(--text-primary);
+    }
+    
+    /* Premium Charts */
+    .chart-card {
+        background: var(--card-bg);
+        border: 1px solid var(--border-color);
+        border-radius: 20px;
+        padding: 2rem;
+        transition: all 0.3s ease;
+    }
+    
+    .chart-card:hover {
+        box-shadow: 0 15px 35px rgba(0,0,0,0.3);
+        transform: translateY(-4px);
+    }
+    
+    .chart-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1.5rem;
+    }
+    
+    .chart-title {
+        font-size: 1.25rem;
+        font-weight: 700;
+        color: var(--text-primary);
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+    }
+    
+    .chart-title i {
+        width: 40px;
+        height: 40px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 10px;
+        background: var(--gradient-primary);
+        color: white;
+        font-size: 1rem;
+    }
+    
+    .chart-container {
+        height: 300px;
+        position: relative;
+    }
+    
+    .chart-legend-premium {
+        display: flex;
+        justify-content: center;
+        gap: 2rem;
+        margin-top: 1.5rem;
+        flex-wrap: wrap;
+    }
+    
+    .legend-item {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        font-size: 0.875rem;
+        font-weight: 600;
+    }
+    
+    .legend-dot {
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        box-shadow: 0 2px 8px currentColor;
+    }
+    
+    /* Premium VPS Table */
+    .vps-table-card {
+        background: var(--card-bg);
+        border: 1px solid var(--border-color);
+        border-radius: 20px;
+        overflow: hidden;
+        margin-bottom: 2rem;
+    }
+    
+    .table-header {
+        padding: 2rem;
+        background: linear-gradient(135deg, rgba(102, 126, 234, 0.05) 0%, rgba(118, 75, 162, 0.05) 100%);
+        border-bottom: 1px solid var(--border-color);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 1rem;
+    }
+    
+    .table-title {
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: var(--text-primary);
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+    }
+    
+    .table-title i {
+        width: 48px;
+        height: 48px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 12px;
+        background: var(--gradient-primary);
+        color: white;
+    }
+    
+    .view-all-btn {
+        padding: 0.75rem 1.5rem;
+        border-radius: 12px;
+        background: var(--gradient-primary);
+        color: white;
+        text-decoration: none;
+        font-weight: 600;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        transition: all 0.3s ease;
+        border: none;
+    }
+    
+    .view-all-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 10px 25px rgba(102, 126, 234, 0.4);
+    }
+    
+    .premium-table {
+        width: 100%;
+        border-collapse: separate;
+        border-spacing: 0;
+    }
+    
+    .premium-table thead th {
+        padding: 1.25rem 1.5rem;
+        text-align: left;
+        font-weight: 700;
+        font-size: 0.75rem;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        color: var(--text-muted);
+        background: rgba(102, 126, 234, 0.03);
+        border-bottom: 2px solid var(--border-color);
+    }
+    
+    .premium-table tbody tr {
+        transition: all 0.3s ease;
+        border-bottom: 1px solid var(--border-color);
+    }
+    
+    .premium-table tbody tr:hover {
+        background: rgba(102, 126, 234, 0.05);
+        transform: scale(1.01);
+    }
+    
+    .premium-table tbody td {
+        padding: 1.5rem 1.5rem;
+        vertical-align: middle;
+    }
+    
+    .vps-name-cell {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+    }
+    
+    .vps-avatar {
+        width: 48px;
+        height: 48px;
+        border-radius: 12px;
+        background: var(--gradient-primary);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-size: 1.25rem;
+        box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+    }
+    
+    .vps-info h4 {
+        font-weight: 700;
+        font-size: 1rem;
+        margin-bottom: 0.25rem;
+        color: var(--text-primary);
+    }
+    
+    .vps-info span {
+        font-size: 0.75rem;
+        color: var(--text-muted);
+    }
+    
+    .status-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.5rem 1rem;
+        border-radius: 20px;
+        font-weight: 600;
+        font-size: 0.875rem;
+    }
+    
+    .status-badge.running {
+        background: rgba(16, 185, 129, 0.1);
+        color: #10b981;
+        border: 1px solid rgba(16, 185, 129, 0.3);
+    }
+    
+    .status-badge.stopped {
+        background: rgba(107, 114, 128, 0.1);
+        color: #6b7280;
+        border: 1px solid rgba(107, 114, 128, 0.3);
+    }
+    
+    .status-badge.suspended {
+        background: rgba(245, 158, 11, 0.1);
+        color: #f59e0b;
+        border: 1px solid rgba(245, 158, 11, 0.3);
+    }
+    
+    .status-badge.installing {
+        background: rgba(59, 130, 246, 0.1);
+        color: #3b82f6;
+        border: 1px solid rgba(59, 130, 246, 0.3);
+    }
+    
+    .status-badge.transferring {
+        background: rgba(168, 85, 247, 0.1);
+        color: #a855f7;
+        border: 1px solid rgba(168, 85, 247, 0.3);
+    }
+    
+    .status-badge .status-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: currentColor;
+        animation: blink 2s ease-in-out infinite;
+    }
+    
+    @keyframes blink {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.5; }
+    }
+    
+    .resource-list {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+    
+    .resource-item {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        font-size: 0.875rem;
+    }
+    
+    .resource-item i {
+        width: 20px;
+        color: var(--text-muted);
+    }
+    
+    .ip-address {
+        font-family: 'Courier New', monospace;
+        font-weight: 600;
+        color: var(--text-primary);
+        background: rgba(102, 126, 234, 0.1);
+        padding: 0.5rem 1rem;
+        border-radius: 8px;
+        font-size: 0.875rem;
+    }
+    
+    .action-buttons {
+        display: flex;
+        gap: 0.5rem;
+    }
+    
+    .action-btn {
+        width: 40px;
+        height: 40px;
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: var(--card-bg);
+        border: 1px solid var(--border-color);
+        color: var(--text-primary);
+        text-decoration: none;
+        transition: all 0.3s ease;
+    }
+    
+    .action-btn:hover {
+        background: var(--gradient-primary);
+        color: white;
+        border-color: transparent;
+        transform: translateY(-2px);
+        box-shadow: 0 8px 16px rgba(102, 126, 234, 0.3);
+    }
+    
+    /* Empty State Premium */
+    .empty-state-premium {
+        text-align: center;
+        padding: 4rem 2rem;
+    }
+    
+    .empty-icon {
+        width: 120px;
+        height: 120px;
+        margin: 0 auto 2rem;
+        border-radius: 50%;
+        background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        animation: float 3s ease-in-out infinite;
+    }
+    
+    .empty-icon i {
+        font-size: 3rem;
+        color: var(--text-muted);
+        opacity: 0.5;
+    }
+    
+    .empty-state-premium h3 {
+        font-size: 1.75rem;
+        font-weight: 700;
+        margin-bottom: 0.75rem;
+        color: var(--text-primary);
+    }
+    
+    .empty-state-premium p {
+        color: var(--text-muted);
+        font-size: 1rem;
+        margin-bottom: 2rem;
+    }
+    
+    /* Mobile Responsive */
+    @media (max-width: 768px) {
+        .hero-welcome {
+            padding: 2rem 1.5rem;
+        }
+        
+        .hero-welcome h1 {
+            font-size: 1.75rem;
+        }
+        
+        .hero-welcome .subtitle {
+            font-size: 1rem;
+        }
+        
+        .stats-grid {
+            grid-template-columns: 1fr;
+        }
+        
+        .quick-actions-premium {
+            grid-template-columns: repeat(2, 1fr);
+        }
+        
+        .premium-table {
+            display: block;
+            overflow-x: auto;
+        }
+        
+        .premium-table thead {
+            display: none;
+        }
+        
+        .premium-table tbody tr {
+            display: block;
+            margin-bottom: 1rem;
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            padding: 1rem;
+        }
+        
+        .premium-table tbody td {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.75rem 0;
+            border: none;
+        }
+        
+        .premium-table tbody td::before {
+            content: attr(data-label);
+            font-weight: 700;
+            color: var(--text-muted);
+            font-size: 0.75rem;
+            text-transform: uppercase;
+        }
+        
+        .vps-name-cell {
+            flex-direction: column;
+            text-align: center;
+        }
+        
+        .chart-container {
+            height: 250px;
+        }
+    }
+    
+    @media (max-width: 480px) {
+        .quick-actions-premium {
+            grid-template-columns: 1fr;
+        }
+        
+        .hero-actions {
+            flex-direction: column;
+        }
+        
+        .hero-btn {
+            width: 100%;
+            justify-content: center;
+        }
+    }
+    
+    /* Notification Card Premium */
+    .notification-card-premium {
+        background: var(--card-bg);
+        border: 1px solid var(--border-color);
+        border-radius: 20px;
+        overflow: hidden;
+        margin-top: 2rem;
+    }
+    
+    .notification-item-premium {
+        padding: 1.5rem;
+        border-bottom: 1px solid var(--border-color);
+        display: flex;
+        gap: 1rem;
+        transition: all 0.3s ease;
+        cursor: pointer;
+    }
+    
+    .notification-item-premium:last-child {
+        border-bottom: none;
+    }
+    
+    .notification-item-premium:hover {
+        background: rgba(102, 126, 234, 0.05);
+        transform: translateX(8px);
+    }
+    
+    .notification-icon-premium {
+        width: 48px;
+        height: 48px;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+    }
+    
+    .notification-icon-premium.success {
+        background: rgba(16, 185, 129, 0.1);
+        color: #10b981;
+    }
+    
+    .notification-icon-premium.warning {
+        background: rgba(245, 158, 11, 0.1);
+        color: #f59e0b;
+    }
+    
+    .notification-icon-premium.danger {
+        background: rgba(239, 68, 68, 0.1);
+        color: #ef4444;
+    }
+    
+    .notification-icon-premium.info {
+        background: rgba(59, 130, 246, 0.1);
+        color: #3b82f6;
+    }
+    
+    .notification-content-premium {
+        flex: 1;
+    }
+    
+    .notification-title-premium {
+        font-weight: 700;
+        font-size: 1rem;
+        margin-bottom: 0.25rem;
+        color: var(--text-primary);
+    }
+    
+    .notification-message-premium {
+        font-size: 0.875rem;
+        color: var(--text-muted);
+        margin-bottom: 0.5rem;
+    }
+    
+    .notification-time-premium {
+        font-size: 0.75rem;
+        color: var(--text-muted);
+        font-weight: 600;
+    }
+    
+    /* Node Status Premium */
+    .node-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        gap: 1.5rem;
+        padding: 1.5rem;
+    }
+    
+    .node-card {
+        background: var(--card-bg);
+        border: 1px solid var(--border-color);
+        border-radius: 16px;
+        padding: 1.5rem;
+        transition: all 0.3s ease;
+    }
+    
+    .node-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 12px 28px rgba(0,0,0,0.3);
+    }
+    
+    .node-header {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        margin-bottom: 1rem;
+    }
+    
+    .node-status-icon {
+        width: 48px;
+        height: 48px;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    
+    .node-status-icon.online {
+        background: var(--gradient-success);
+        color: white;
+        box-shadow: var(--glow-success);
+    }
+    
+    .node-status-icon.offline {
+        background: var(--gradient-warning);
+        color: white;
+    }
+    
+    .node-info h4 {
+        font-weight: 700;
+        font-size: 1.125rem;
+        margin-bottom: 0.25rem;
+        color: var(--text-primary);
+    }
+    
+    .node-info span {
+        font-size: 0.875rem;
+        color: var(--text-muted);
+    }
+    
+    .node-stats {
+        display: flex;
+        gap: 0.5rem;
+        margin-top: 1rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="dashboard-container">
+    <!-- Hero Welcome -->
+    <div class="hero-welcome">
+        <div class="hero-content">
+            <h1>Welcome back, {{ current_user.username }}! 🚀</h1>
+            <p class="subtitle">Manage your virtual infrastructure with ease and precision</p>
+            <div class="hero-actions">
+                <a href="{{ url_for('vps_list') }}" class="hero-btn primary">
+                    <i class="fas fa-server"></i>
+                    <span>Manage VPS</span>
+                </a>
+                {% if current_user.is_admin %}
+                <a href="{{ url_for('admin_vps_create') }}" class="hero-btn">
+                    <i class="fas fa-plus-circle"></i>
+                    <span>Create New VPS</span>
+                </a>
+                <a href="{{ url_for('admin_dashboard') }}" class="hero-btn">
+                    <i class="fas fa-crown"></i>
+                    <span>Admin Panel</span>
+                </a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Premium Stats -->
+    <div class="stats-grid">
+        <div class="premium-stat-card" style="--gradient: var(--gradient-primary); --glow: var(--glow-primary);">
+            <div class="stat-header">
+                <div class="stat-icon-wrapper">
+                    <i class="fas fa-server"></i>
+                </div>
+                <div class="stat-trend">
+                    <i class="fas fa-arrow-up"></i>
+                    <span>Active</span>
+                </div>
+            </div>
+            <div class="stat-body">
+                <div class="stat-label">Total VPS</div>
+                <div class="stat-value">{{ vps_count }}</div>
+            </div>
+            <div class="stat-footer">
+                <span class="stat-badge success">{{ running_count }} Running</span>
+                <span class="stat-badge warning">{{ suspended_count }} Suspended</span>
+            </div>
+        </div>
+
+        <div class="premium-stat-card" style="--gradient: var(--gradient-success); --glow: var(--glow-success);">
+            <div class="stat-header">
+                <div class="stat-icon-wrapper">
+                    <i class="fas fa-microchip"></i>
+                </div>
+                <div class="stat-trend">
+                    <i class="fas fa-chart-line"></i>
+                    <span>Cores</span>
+                </div>
+            </div>
+            <div class="stat-body">
+                <div class="stat-label">Total CPU</div>
+                <div class="stat-value">{{ total_cpu }}</div>
+            </div>
+            <div class="stat-footer">
+                <span class="stat-badge">Across all VPS</span>
+            </div>
+        </div>
+
+        <div class="premium-stat-card" style="--gradient: var(--gradient-info); --glow: 0 0 20px rgba(79, 172, 254, 0.4);">
+            <div class="stat-header">
+                <div class="stat-icon-wrapper">
+                    <i class="fas fa-memory"></i>
+                </div>
+                <div class="stat-trend">
+                    <i class="fas fa-database"></i>
+                    <span>RAM</span>
+                </div>
+            </div>
+            <div class="stat-body">
+                <div class="stat-label">Total Memory</div>
+                <div class="stat-value">{{ total_ram }}<span style="font-size: 1.5rem;">GB</span></div>
+            </div>
+            <div class="stat-footer">
+                <span class="stat-badge">Allocated</span>
+            </div>
+        </div>
+
+        <div class="premium-stat-card" style="--gradient: var(--gradient-warning); --glow: 0 0 20px rgba(240, 147, 251, 0.4);">
+            <div class="stat-header">
+                <div class="stat-icon-wrapper">
+                    <i class="fas fa-hdd"></i>
+                </div>
+                <div class="stat-trend">
+                    <i class="fas fa-chart-pie"></i>
+                    <span>Disk</span>
+                </div>
+            </div>
+            <div class="stat-body">
+                <div class="stat-label">Total Storage</div>
+                <div class="stat-value">{{ total_disk }}<span style="font-size: 1.5rem;">GB</span></div>
+            </div>
+            <div class="stat-footer">
+                <span class="stat-badge">Provisioned</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="quick-actions-premium">
+        <a href="{{ url_for('vps_list') }}" class="action-card" style="--gradient: var(--gradient-primary);">
+            <div class="action-card-content">
+                <div class="action-icon">
+                    <i class="fas fa-server"></i>
+                </div>
+                <div class="action-title">My VPS</div>
+            </div>
+        </a>
+        <a href="{{ url_for('ports_list') }}" class="action-card" style="--gradient: var(--gradient-success);">
+            <div class="action-card-content">
+                <div class="action-icon">
+                    <i class="fas fa-plug"></i>
+                </div>
+                <div class="action-title">Port Forwards</div>
+            </div>
+        </a>
+        <a href="{{ url_for('profile') }}" class="action-card" style="--gradient: var(--gradient-info);">
+            <div class="action-card-content">
+                <div class="action-icon">
+                    <i class="fas fa-user-circle"></i>
+                </div>
+                <div class="action-title">My Profile</div>
+            </div>
+        </a>
+        <a href="{{ url_for('notifications') }}" class="action-card" style="--gradient: var(--gradient-warning);">
+            <div class="action-card-content">
+                <div class="action-icon">
+                    <i class="fas fa-bell"></i>
+                </div>
+                <div class="action-title">Notifications</div>
+            </div>
+        </a>
+        {% if current_user.is_admin %}
+        <a href="{{ url_for('admin_dashboard') }}" class="action-card" style="--gradient: var(--gradient-danger);">
+            <div class="action-card-content">
+                <div class="action-icon">
+                    <i class="fas fa-crown"></i>
+                </div>
+                <div class="action-title">Admin Panel</div>
+            </div>
+        </a>
+        <a href="{{ url_for('admin_vps_create') }}" class="action-card" style="--gradient: var(--gradient-primary);">
+            <div class="action-card-content">
+                <div class="action-icon">
+                    <i class="fas fa-plus-circle"></i>
+                </div>
+                <div class="action-title">Create VPS</div>
+            </div>
+        </a>
+        {% endif %}
+    </div>
+
+    <!-- Charts -->
+    <div class="grid grid-2" style="margin-bottom: 2rem;">
+        <div class="chart-card">
+            <div class="chart-header">
+                <div class="chart-title">
+                    <i class="fas fa-chart-pie"></i>
+                    <span>VPS Status Distribution</span>
+                </div>
+            </div>
+            <div class="chart-container">
+                <canvas id="statusChart"></canvas>
+            </div>
+            <div class="chart-legend-premium">
+                <div class="legend-item">
+                    <div class="legend-dot" style="background: #10b981;"></div>
+                    <span>Running ({{ running_count }})</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-dot" style="background: #6b7280;"></div>
+                    <span>Stopped ({{ stopped_count }})</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-dot" style="background: #f59e0b;"></div>
+                    <span>Suspended ({{ suspended_count }})</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="chart-card">
+            <div class="chart-header">
+                <div class="chart-title">
+                    <i class="fas fa-chart-bar"></i>
+                    <span>Resource Allocation</span>
+                </div>
+            </div>
+            <div class="chart-container">
+                <canvas id="resourceChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- VPS Table -->
+    <div class="vps-table-card">
+        <div class="table-header">
+            <div class="table-title">
+                <i class="fas fa-server"></i>
+                <span>My Virtual Private Servers</span>
+            </div>
+            <a href="{{ url_for('vps_list') }}" class="view-all-btn">
+                <span>View All</span>
+                <i class="fas fa-arrow-right"></i>
+            </a>
+        </div>
+
+        {% if vps_list %}
+        <table class="premium-table">
+            <thead>
+                <tr>
+                    <th>VPS Name</th>
+                    <th>Status</th>
+                    <th>Resources</th>
+                    <th>IP Address</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for vps in vps_list[:5] %}
+                <tr data-vps-id="{{ vps.id }}">
+                    <td data-label="VPS Name">
+                        <div class="vps-name-cell">
+                            <div class="vps-avatar">
+                                <i class="fas fa-server"></i>
+                            </div>
+                            <div class="vps-info">
+                                <h4 style="display: flex; align-items: center; gap: 0.5rem;">
+                                    <span>{{ vps.hostname or vps.container_name }}</span>
+                                    {% if vps.whitelisted %}
+                                    <i class="fas fa-star" style="color: #fbbf24; font-size: 0.875rem;" title="Whitelisted VPS"></i>
+                                    {% endif %}
+                                </h4>
+                                <span>ID: {{ vps.id }} • {{ vps.os_version }}</span>
+                            </div>
+                        </div>
+                    </td>
+                    <td data-label="Status">
+                        <span class="status-badge {% if vps.suspended %}suspended{% elif vps.live_status == 'transferring' %}transferring{% elif vps.live_status == 'installing' %}installing{% elif vps.live_status == 'running' %}running{% else %}stopped{% endif %}">
+                            <span class="status-dot"></span>
+                            {% if vps.suspended %}Suspended{% elif vps.live_status == 'transferring' %}Transferring{% elif vps.live_status == 'installing' %}Installing{% elif vps.live_status == 'running' %}Running{% else %}Stopped{% endif %}
+                        </span>
+                    </td>
+                    <td data-label="Resources">
+                        <div class="resource-list">
+                            <div class="resource-item">
+                                <i class="fas fa-microchip"></i>
+                                <span>{{ vps.cpu }} CPU Cores</span>
+                            </div>
+                            <div class="resource-item">
+                                <i class="fas fa-memory"></i>
+                                <span>{{ vps.ram }} RAM</span>
+                            </div>
+                            <div class="resource-item">
+                                <i class="fas fa-hdd"></i>
+                                <span>{{ vps.storage }} Storage</span>
+                            </div>
+                        </div>
+                    </td>
+                    <td data-label="IP Address">
+                        <div class="ip-address">
+                            {% if vps.ip_alias %}
+                            {{ vps.ip_alias }}
+                            {% elif vps.ip_address %}
+                            {{ vps.ip_address }}
+                            {% else %}
+                            Not assigned
+                            {% endif %}
+                        </div>
+                    </td>
+                    <td data-label="Actions">
+                        <div class="action-buttons">
+                            <a href="{{ url_for('vps_detail', vps_id=vps.id) }}" class="action-btn" title="Manage">
+                                <i class="fas fa-cog"></i>
+                            </a>
+                            {% if vps.live_status == 'running' and not vps.suspended %}
+                            <a href="{{ url_for('vps_console', vps_id=vps.id) }}" class="action-btn" title="Console">
+                                <i class="fas fa-terminal"></i>
+                            </a>
+                            {% endif %}
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <div class="empty-state-premium">
+            <div class="empty-icon">
+                <i class="fas fa-server"></i>
+            </div>
+            <h3>No VPS Yet</h3>
+            <p>You haven't created any virtual private servers yet. Get started now!</p>
+            {% if current_user.is_admin %}
+            <a href="{{ url_for('admin_vps_create') }}" class="hero-btn primary">
+                <i class="fas fa-plus-circle"></i>
+                <span>Create Your First VPS</span>
+            </a>
+            {% else %}
+            <p style="color: var(--text-muted); font-size: 0.875rem;">Contact an administrator to create a VPS for you.</p>
+            {% endif %}
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Notifications -->
+    {% if notifications %}
+    <div class="notification-card-premium">
+        <div class="table-header">
+            <div class="table-title">
+                <i class="fas fa-bell"></i>
+                <span>Recent Notifications</span>
+            </div>
+            <a href="{{ url_for('notifications') }}" class="view-all-btn">
+                <span>View All</span>
+                <i class="fas fa-arrow-right"></i>
+            </a>
+        </div>
+        {% for notif in notifications[:5] %}
+        <div class="notification-item-premium" onclick="window.location.href='{{ url_for('notifications') }}'">
+            <div class="notification-icon-premium {{ notif.type }}">
+                <i class="fas fa-{% if notif.type == 'success' %}check-circle{% elif notif.type == 'warning' %}exclamation-triangle{% elif notif.type == 'danger' %}exclamation-circle{% else %}info-circle{% endif %}"></i>
+            </div>
+            <div class="notification-content-premium">
+                <div class="notification-title-premium">{{ notif.title }}</div>
+                <div class="notification-message-premium">{{ notif.message }}</div>
+                <div class="notification-time-premium">
+                    <i class="fas fa-clock"></i> {{ notif.created_at|relative_time }}
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <!-- Node Status (Admin) -->
+    {% if current_user.is_admin and node_status %}
+    <div class="vps-table-card" style="margin-top: 2rem;">
+        <div class="table-header">
+            <div class="table-title">
+                <i class="fas fa-network-wired"></i>
+                <span>Node Infrastructure</span>
+            </div>
+        </div>
+        <div class="node-grid">
+            {% for node in node_status %}
+            <div class="node-card">
+                <div class="node-header">
+                    <div class="node-status-icon {% if node.online %}online{% else %}offline{% endif %}">
+                        <i class="fas fa-{% if node.online %}check-circle{% else %}exclamation-circle{% endif %}"></i>
+                    </div>
+                    <div class="node-info">
+                        <h4>{{ node.name }}</h4>
+                        <span><i class="fas fa-map-marker-alt"></i> {{ node.location }}</span>
+                    </div>
+                </div>
+                <div class="node-stats">
+                    <span class="stat-badge">{{ node.vps_count }}/{{ node.total_vps }} VPS</span>
+                    <span class="stat-badge {% if node.online %}success{% else %}warning{% endif %}">
+                        {% if node.online %}Online{% else %}Offline{% endif %}
+                    </span>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Status Chart with gradient
+        const statusCtx = document.getElementById('statusChart').getContext('2d');
+        const statusGradient1 = statusCtx.createLinearGradient(0, 0, 0, 300);
+        statusGradient1.addColorStop(0, '#10b981');
+        statusGradient1.addColorStop(1, '#059669');
+        
+        const statusGradient2 = statusCtx.createLinearGradient(0, 0, 0, 300);
+        statusGradient2.addColorStop(0, '#6b7280');
+        statusGradient2.addColorStop(1, '#4b5563');
+        
+        const statusGradient3 = statusCtx.createLinearGradient(0, 0, 0, 300);
+        statusGradient3.addColorStop(0, '#f59e0b');
+        statusGradient3.addColorStop(1, '#d97706');
+
+        let statusChart = new Chart(statusCtx, {
+            type: 'doughnut',
+            data: {
+                labels: ['Running', 'Stopped', 'Suspended'],
+                datasets: [{
+                    data: [{{ running_count }}, {{ stopped_count }}, {{ suspended_count }}],
+                    backgroundColor: [statusGradient1, statusGradient2, statusGradient3],
+                    borderWidth: 0,
+                    hoverOffset: 15
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                cutout: '75%',
+                plugins: {
+                    legend: {
+                        display: false
+                    },
+                    tooltip: {
+                        backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                        padding: 12,
+                        cornerRadius: 8,
+                        titleFont: {
+                            size: 14,
+                            weight: 'bold'
+                        },
+                        bodyFont: {
+                            size: 13
+                        }
+                    }
+                }
+            }
+        });
+
+        // Resource Chart with gradients
+        const resourceCtx = document.getElementById('resourceChart').getContext('2d');
+        
+        const cpuGradient = resourceCtx.createLinearGradient(0, 0, 0, 300);
+        cpuGradient.addColorStop(0, '#667eea');
+        cpuGradient.addColorStop(1, '#764ba2');
+        
+        const ramGradient = resourceCtx.createLinearGradient(0, 0, 0, 300);
+        ramGradient.addColorStop(0, '#11998e');
+        ramGradient.addColorStop(1, '#38ef7d');
+        
+        const diskGradient = resourceCtx.createLinearGradient(0, 0, 0, 300);
+        diskGradient.addColorStop(0, '#4facfe');
+        diskGradient.addColorStop(1, '#00f2fe');
+
+        new Chart(resourceCtx, {
+            type: 'bar',
+            data: {
+                labels: ['CPU Cores', 'RAM (GB)', 'Storage (GB)'],
+                datasets: [{
+                    label: 'Allocated Resources',
+                    data: [{{ total_cpu }}, {{ total_ram }}, {{ total_disk }}],
+                    backgroundColor: [cpuGradient, ramGradient, diskGradient],
+                    borderRadius: 12,
+                    borderSkipped: false
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: false
+                    },
+                    tooltip: {
+                        backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                        padding: 12,
+                        cornerRadius: 8,
+                        titleFont: {
+                            size: 14,
+                            weight: 'bold'
+                        },
+                        bodyFont: {
+                            size: 13
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        grid: {
+                            color: 'rgba(255, 255, 255, 0.05)',
+                            drawBorder: false
+                        },
+                        ticks: {
+                            color: '#9ca3af',
+                            font: {
+                                size: 12,
+                                weight: '600'
+                            }
+                        }
+                    },
+                    x: {
+                        grid: {
+                            display: false
+                        },
+                        ticks: {
+                            color: '#9ca3af',
+                            font: {
+                                size: 12,
+                                weight: '600'
+                            }
+                        }
+                    }
+                }
+            }
+        });
+
+        // Load live VPS stats asynchronously
+        loadDashboardStats();
+        
+        // Auto-refresh stats every 15 seconds
+        setInterval(loadDashboardStats, 15000);
+    });
+
+    async function loadDashboardStats() {
+        try {
+            const response = await fetch('/dashboard/stats');
+            const data = await response.json();
+            
+            if (data.success && data.stats) {
+                let runningCount = 0;
+                let stoppedCount = 0;
+                let suspendedCount = 0;
+                
+                // Update VPS status badges and counts
+                Object.entries(data.stats).forEach(([vpsId, stats]) => {
+                    const statusBadge = document.querySelector(`[data-vps-id="${vpsId}"] .status-badge`);
+                    
+                    if (statusBadge) {
+                        // Remove existing status classes
+                        statusBadge.classList.remove('running', 'stopped', 'suspended');
+                        
+                        // Add new status class and update text
+                        if (stats.status === 'suspended') {
+                            statusBadge.classList.add('suspended');
+                            statusBadge.innerHTML = '<span class="status-dot"></span>Suspended';
+                            suspendedCount++;
+                        } else if (stats.status === 'running') {
+                            statusBadge.classList.add('running');
+                            statusBadge.innerHTML = '<span class="status-dot"></span>Running';
+                            runningCount++;
+                        } else {
+                            statusBadge.classList.add('stopped');
+                            statusBadge.innerHTML = '<span class="status-dot"></span>Stopped';
+                            stoppedCount++;
+                        }
+                    }
+                    
+                    // Update RAM usage notifications for high usage
+                    if (stats.status === 'running' && stats.ram && stats.ram.pct > 90) {
+                        console.log(`High RAM usage detected for VPS ${vpsId}: ${stats.ram.pct}%`);
+                    }
+                });
+                
+                // Update status chart if counts changed
+                const currentData = statusChart.data.datasets[0].data;
+                if (currentData[0] !== runningCount || currentData[1] !== stoppedCount || currentData[2] !== suspendedCount) {
+                    statusChart.data.datasets[0].data = [runningCount, stoppedCount, suspendedCount];
+                    statusChart.update('none'); // Update without animation for smoother experience
+                }
+                
+                console.log('Dashboard stats updated:', { running: runningCount, stopped: stoppedCount, suspended: suspendedCount });
+            }
+        } catch (error) {
+            console.error('Error loading dashboard stats:', error);
+        }
+    }
+</script>
+{% endblock %}

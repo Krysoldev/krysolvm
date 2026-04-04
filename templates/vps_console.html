@@ -1,0 +1,1503 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>{{ panel_name }} · Console: {{ vps.container_name }}</title>
+    
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- Xterm.js for terminal emulation -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/xterm/css/xterm.css" />
+    <script src="https://cdn.jsdelivr.net/npm/xterm/lib/xterm.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/xterm-addon-fit/lib/xterm-addon-fit.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/xterm-addon-web-links/lib/xterm-addon-web-links.js"></script>
+    
+    <style>
+        /* ==================== PREMIUM CONSOLE STYLES ==================== */
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        :root {
+            --gradient-primary: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            --gradient-success: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+            --gradient-danger: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+            --gradient-dark: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            --glow-primary: 0 0 20px rgba(102, 126, 234, 0.4);
+            --glow-success: 0 0 20px rgba(17, 153, 142, 0.4);
+            --glow-danger: 0 0 20px rgba(250, 112, 154, 0.4);
+        }
+        
+        /* ==================== KEYFRAMES ANIMATIONS ==================== */
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                transform: translateY(-30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        @keyframes slideInLeft {
+            from {
+                opacity: 0;
+                transform: translateX(-30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+        
+        @keyframes pulse {
+            0%, 100% {
+                transform: scale(1);
+                opacity: 1;
+            }
+            50% {
+                transform: scale(1.2);
+                opacity: 0.7;
+            }
+        }
+        
+        @keyframes glowPulse {
+            0%, 100% {
+                box-shadow: 0 0 5px rgba(102, 126, 234, 0.3);
+            }
+            50% {
+                box-shadow: 0 0 25px rgba(102, 126, 234, 0.6);
+            }
+        }
+        
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+        
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.4; }
+        }
+        
+        @keyframes shimmer {
+            0% {
+                background-position: -200% 0;
+            }
+            100% {
+                background-position: 200% 0;
+            }
+        }
+        
+        @keyframes borderFlow {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+        
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-5px); }
+        }
+        
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #0a0c10 0%, #1a1e2e 100%);
+            min-height: 100vh;
+            color: #e0e0e0;
+            overflow: hidden;
+        }
+        
+        /* ==================== HEADER SECTION ==================== */
+        .console-header {
+            background: rgba(17, 19, 22, 0.95);
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid rgba(102, 126, 234, 0.2);
+            padding: 0.75rem 0;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            animation: slideDown 0.5s ease-out;
+        }
+        
+        .header-container {
+            max-width: 1600px;
+            margin: 0 auto;
+            padding: 0 2rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+        
+        .back-link {
+            color: #8899aa;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.9rem;
+            padding: 0.5rem 1rem;
+            border-radius: 12px;
+            background: rgba(255, 255, 255, 0.05);
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .back-link::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+            transition: left 0.5s ease;
+        }
+        
+        .back-link:hover::before {
+            left: 100%;
+        }
+        
+        .back-link:hover {
+            color: white;
+            background: rgba(102, 126, 234, 0.2);
+            transform: translateX(-5px);
+        }
+        
+        .vps-info-console {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+        
+        .vps-icon {
+            width: 48px;
+            height: 48px;
+            background: var(--gradient-primary);
+            border-radius: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.25rem;
+            transition: all 0.3s ease;
+            animation: glowPulse 3s ease-in-out infinite;
+        }
+        
+        .vps-info-console:hover .vps-icon {
+            transform: scale(1.05) rotate(5deg);
+        }
+        
+        .vps-name-console {
+            font-size: 1.25rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, #fff, rgba(255,255,255,0.7));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        
+        .vps-os {
+            font-size: 0.7rem;
+            color: #8899aa;
+            margin-top: 0.25rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .connection-status {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.5rem 1.25rem;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 40px;
+            transition: all 0.3s ease;
+        }
+        
+        .connection-status:hover {
+            background: rgba(102, 126, 234, 0.1);
+            transform: scale(1.02);
+        }
+        
+        .status-led {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+        
+        .status-led.connected {
+            background: #10b981;
+            box-shadow: 0 0 10px #10b981;
+            animation: pulse 2s ease-in-out infinite;
+        }
+        
+        .status-led.connected::before {
+            content: '';
+            position: absolute;
+            inset: -4px;
+            border-radius: 50%;
+            background: #10b981;
+            opacity: 0.3;
+            animation: pulse 2s ease-in-out infinite;
+        }
+        
+        .status-led.connecting {
+            background: #f59e0b;
+            animation: blink 1s ease-in-out infinite;
+        }
+        
+        .status-led.disconnected {
+            background: #ef4444;
+        }
+        
+        .status-text {
+            font-size: 0.875rem;
+            font-weight: 600;
+        }
+        
+        .action-buttons-console {
+            display: flex;
+            gap: 0.5rem;
+        }
+        
+        .console-btn {
+            padding: 0.5rem 1rem;
+            border-radius: 10px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: #e0e0e0;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.875rem;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .console-btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+            transition: left 0.5s ease;
+        }
+        
+        .console-btn:hover::before {
+            left: 100%;
+        }
+        
+        .console-btn:hover {
+            background: rgba(102, 126, 234, 0.2);
+            border-color: rgba(102, 126, 234, 0.5);
+            transform: translateY(-2px);
+        }
+        
+        .console-btn.danger:hover {
+            background: rgba(239, 68, 68, 0.2);
+            border-color: rgba(239, 68, 68, 0.5);
+            color: #ff7b72;
+        }
+        
+        /* ==================== TERMINAL WRAPPER ==================== */
+        .terminal-wrapper {
+            padding: 1rem;
+            height: calc(100vh - 80px);
+        }
+        
+        .terminal-container {
+            background: #0a0c10;
+            border-radius: 20px;
+            overflow: hidden;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+            border: 1px solid rgba(102, 126, 234, 0.2);
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            animation: slideUp 0.5s ease-out;
+            transition: all 0.3s ease;
+        }
+        
+        .terminal-container:hover {
+            border-color: rgba(102, 126, 234, 0.4);
+            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.5);
+        }
+        
+        /* ==================== TABS ==================== */
+        .terminal-tabs {
+            display: flex;
+            gap: 0.25rem;
+            padding: 0.75rem 1rem;
+            background: rgba(10, 12, 16, 0.95);
+            border-bottom: 1px solid rgba(102, 126, 234, 0.1);
+        }
+        
+        .terminal-tab {
+            padding: 0.5rem 1.25rem;
+            border-radius: 10px;
+            background: transparent;
+            border: none;
+            color: #8899aa;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.875rem;
+            font-weight: 500;
+            position: relative;
+        }
+        
+        .terminal-tab::after {
+            content: '';
+            position: absolute;
+            bottom: -2px;
+            left: 50%;
+            width: 0;
+            height: 2px;
+            background: var(--gradient-primary);
+            transition: all 0.3s ease;
+            transform: translateX(-50%);
+        }
+        
+        .terminal-tab:hover::after {
+            width: 80%;
+        }
+        
+        .terminal-tab:hover {
+            background: rgba(102, 126, 234, 0.1);
+            color: white;
+            transform: translateY(-2px);
+        }
+        
+        .terminal-tab.active {
+            background: rgba(102, 126, 234, 0.15);
+            color: #667eea;
+        }
+        
+        .terminal-tab.active::after {
+            width: 80%;
+        }
+        
+        /* ==================== TERMINAL CONTENT ==================== */
+        .terminal-content {
+            flex: 1;
+            position: relative;
+            background: #0a0c10;
+        }
+        
+        #terminal {
+            width: 100%;
+            height: 100%;
+        }
+        
+        .xterm {
+            padding: 8px;
+        }
+        
+        .xterm-viewport::-webkit-scrollbar {
+            width: 8px;
+        }
+        
+        .xterm-viewport::-webkit-scrollbar-track {
+            background: rgba(17, 19, 22, 0.5);
+            border-radius: 4px;
+        }
+        
+        .xterm-viewport::-webkit-scrollbar-thumb {
+            background: rgba(102, 126, 234, 0.3);
+            border-radius: 4px;
+            transition: background 0.3s ease;
+        }
+        
+        .xterm-viewport::-webkit-scrollbar-thumb:hover {
+            background: rgba(102, 126, 234, 0.6);
+        }
+        
+        /* ==================== SESSION LOGS ==================== */
+        .session-logs {
+            display: none;
+            height: 100%;
+            overflow-y: auto;
+            padding: 1rem;
+            background: #0a0c10;
+            font-family: 'Courier New', monospace;
+            font-size: 0.875rem;
+        }
+        
+        .session-logs.active {
+            display: block;
+            animation: fadeIn 0.3s ease;
+        }
+        
+        .log-entry {
+            padding: 0.5rem;
+            border-bottom: 1px solid rgba(102, 126, 234, 0.05);
+            transition: all 0.3s ease;
+            animation: slideInLeft 0.3s ease-out;
+        }
+        
+        .log-entry:hover {
+            background: rgba(102, 126, 234, 0.05);
+            transform: translateX(5px);
+        }
+        
+        /* ==================== INFO PANEL ==================== */
+        .info-panel {
+            display: none;
+            height: 100%;
+            overflow-y: auto;
+            padding: 1.5rem;
+            background: #0a0c10;
+        }
+        
+        .info-panel.active {
+            display: block;
+            animation: fadeIn 0.3s ease;
+        }
+        
+        .info-section {
+            background: rgba(17, 19, 22, 0.8);
+            border-radius: 16px;
+            padding: 1.25rem;
+            margin-bottom: 1rem;
+            border: 1px solid rgba(102, 126, 234, 0.1);
+            transition: all 0.3s ease;
+            animation: slideUp 0.3s ease-out;
+        }
+        
+        .info-section:hover {
+            border-color: rgba(102, 126, 234, 0.3);
+            transform: translateX(5px);
+            background: rgba(17, 19, 22, 0.9);
+        }
+        
+        .info-section-title {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+            color: #667eea;
+            font-size: 0.875rem;
+        }
+        
+        .info-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 0.75rem;
+        }
+        
+        .info-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.5rem 0.75rem;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 10px;
+            transition: all 0.3s ease;
+        }
+        
+        .info-item:hover {
+            background: rgba(102, 126, 234, 0.1);
+            transform: scale(1.02);
+        }
+        
+        .info-label {
+            font-size: 0.7rem;
+            color: #8899aa;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .info-value {
+            font-weight: 600;
+            font-family: 'Courier New', monospace;
+            font-size: 0.875rem;
+        }
+        
+        .shortcuts-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 0.5rem;
+        }
+        
+        .shortcut-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0.5rem 0.75rem;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 8px;
+            font-size: 0.75rem;
+            transition: all 0.3s ease;
+        }
+        
+        .shortcut-item:hover {
+            background: rgba(102, 126, 234, 0.1);
+            transform: translateX(3px);
+        }
+        
+        .shortcut-key {
+            background: rgba(102, 126, 234, 0.2);
+            padding: 0.25rem 0.5rem;
+            border-radius: 6px;
+            font-family: monospace;
+            font-weight: 600;
+            font-size: 0.7rem;
+        }
+        
+        /* ==================== FOOTER ==================== */
+        .console-footer {
+            background: rgba(17, 19, 22, 0.95);
+            backdrop-filter: blur(20px);
+            border-top: 1px solid rgba(102, 126, 234, 0.1);
+            padding: 0.5rem 1.5rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 1rem;
+            font-size: 0.75rem;
+            color: #8899aa;
+        }
+        
+        .footer-hint {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            transition: all 0.3s ease;
+        }
+        
+        .footer-hint:hover {
+            color: #667eea;
+            transform: translateX(3px);
+        }
+        
+        .cursor-position {
+            font-family: 'Courier New', monospace;
+            background: rgba(102, 126, 234, 0.1);
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            transition: all 0.3s ease;
+        }
+        
+        .cursor-position:hover {
+            background: rgba(102, 126, 234, 0.2);
+            transform: scale(1.05);
+        }
+        
+        /* ==================== MODAL ==================== */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.85);
+            backdrop-filter: blur(8px);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            animation: fadeIn 0.3s ease;
+        }
+        
+        .modal-overlay.active {
+            display: flex;
+        }
+        
+        .modal-content-console {
+            background: linear-gradient(135deg, #1a1c20, #111316);
+            border-radius: 28px;
+            max-width: 450px;
+            width: 90%;
+            animation: slideUp 0.3s ease;
+            border: 1px solid rgba(102, 126, 234, 0.3);
+            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.5);
+            transition: all 0.3s ease;
+        }
+        
+        .modal-content-console:hover {
+            transform: scale(1.02);
+            border-color: rgba(102, 126, 234, 0.5);
+        }
+        
+        .modal-header-console {
+            padding: 1.5rem;
+            border-bottom: 1px solid rgba(102, 126, 234, 0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .modal-header-console h3 {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            font-size: 1.25rem;
+        }
+        
+        .modal-close {
+            background: none;
+            border: none;
+            color: #8899aa;
+            font-size: 1.5rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .modal-close:hover {
+            background: rgba(239, 68, 68, 0.2);
+            color: #ef4444;
+            transform: rotate(90deg);
+        }
+        
+        .modal-body-console {
+            padding: 1.5rem;
+        }
+        
+        .modal-footer-console {
+            padding: 1rem 1.5rem;
+            border-top: 1px solid rgba(102, 126, 234, 0.1);
+            display: flex;
+            justify-content: flex-end;
+            gap: 0.75rem;
+        }
+        
+        /* ==================== TOAST NOTIFICATIONS ==================== */
+        .toast-container {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            z-index: 2000;
+        }
+        
+        .toast-notification {
+            background: linear-gradient(135deg, #1a1c20, #111316);
+            border-left: 4px solid;
+            border-radius: 14px;
+            padding: 1rem 1.5rem;
+            margin-top: 0.75rem;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+            animation: slideInLeft 0.3s ease;
+            color: white;
+            font-size: 0.875rem;
+            font-weight: 500;
+        }
+        
+        .toast-notification.success { border-left-color: #10b981; }
+        .toast-notification.error { border-left-color: #ef4444; }
+        .toast-notification.warning { border-left-color: #f59e0b; }
+        .toast-notification.info { border-left-color: #3b82f6; }
+        
+        /* ==================== LOADING SPINNER ==================== */
+        .loading-spinner {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 2px solid rgba(255,255,255,0.3);
+            border-top-color: white;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+        
+        /* ==================== RESPONSIVE ==================== */
+        @media (max-width: 1024px) {
+            .info-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .shortcuts-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        @media (max-width: 768px) {
+            .header-container {
+                padding: 0 1rem;
+                flex-direction: column;
+            }
+            
+            .vps-info-console {
+                width: 100%;
+                justify-content: space-between;
+            }
+            
+            .action-buttons-console {
+                width: 100%;
+                justify-content: center;
+            }
+            
+            .terminal-wrapper {
+                padding: 0.5rem;
+                height: calc(100vh - 160px);
+            }
+            
+            .console-footer {
+                font-size: 0.65rem;
+                padding: 0.5rem 1rem;
+            }
+            
+            .terminal-tab span {
+                display: none;
+            }
+            
+            .terminal-tab {
+                padding: 0.5rem 1rem;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .action-buttons-console {
+                flex-wrap: wrap;
+            }
+            
+            .console-btn {
+                padding: 0.4rem 0.8rem;
+                font-size: 0.75rem;
+            }
+            
+            .console-btn span {
+                display: none;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Header -->
+    <header class="console-header">
+        <div class="header-container">
+            <div style="display: flex; align-items: center; gap: 1rem;">
+                <a href="{{ url_for('vps_detail', vps_id=vps.id) }}" class="back-link">
+                    <i class="fas fa-arrow-left"></i>
+                    <span>Back to VPS</span>
+                </a>
+                <div class="vps-info-console">
+                    <div class="vps-icon">
+                        <i class="fas fa-terminal"></i>
+                    </div>
+                    <div>
+                        <div class="vps-name-console">{{ vps.container_name }}</div>
+                        <div class="vps-os">
+                            <i class="fas fa-microchip"></i> {{ vps.os_version }}
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div style="display: flex; align-items: center; gap: 1rem;">
+                <div class="connection-status">
+                    <span class="status-led" id="statusLed"></span>
+                    <span class="status-text" id="statusText">Disconnected</span>
+                </div>
+                <div class="action-buttons-console">
+                    <button class="console-btn" id="reconnectBtn" title="Reconnect">
+                        <i class="fas fa-sync-alt"></i>
+                        <span>Reconnect</span>
+                    </button>
+                    <button class="console-btn" id="fullscreenBtn" title="Fullscreen (F11)">
+                        <i class="fas fa-expand"></i>
+                        <span>Fullscreen</span>
+                    </button>
+                    <button class="console-btn danger" id="exitBtn" title="Exit Console">
+                        <i class="fas fa-sign-out-alt"></i>
+                        <span>Exit</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Terminal Container -->
+    <div class="terminal-wrapper">
+        <div class="terminal-container">
+            <div class="terminal-tabs">
+                <button class="terminal-tab active" onclick="switchTab('terminal', this)">
+                    <i class="fas fa-terminal"></i>
+                    <span>Terminal</span>
+                </button>
+                <button class="terminal-tab" onclick="switchTab('logs', this)">
+                    <i class="fas fa-history"></i>
+                    <span>Session Logs</span>
+                </button>
+                <button class="terminal-tab" onclick="switchTab('info', this)">
+                    <i class="fas fa-info-circle"></i>
+                    <span>Info</span>
+                </button>
+            </div>
+            
+            <div class="terminal-content">
+                <div id="terminal"></div>
+                <div id="sessionLogs" class="session-logs">
+                    <div style="text-align: center; padding: 2rem; color: #8899aa;">
+                        <i class="fas fa-spinner fa-spin"></i> Loading logs...
+                    </div>
+                </div>
+                <div id="infoPanel" class="info-panel">
+                    <!-- Info content will be populated dynamically -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="console-footer">
+        <div class="footer-hint">
+            <i class="fas fa-keyboard"></i> Ctrl+Shift+C/V to copy/paste
+        </div>
+        <div class="footer-hint">
+            <i class="fas fa-arrows-alt"></i> Terminal is resizable
+        </div>
+        <div class="cursor-position" id="cursorPosition">
+            <i class="fas fa-cursor"></i> Ln 1, Col 1
+        </div>
+    </footer>
+
+    <!-- Toast Container -->
+    <div class="toast-container" id="toastContainer"></div>
+
+    <!-- Restart Modal -->
+    <div id="restartModal" class="modal-overlay">
+        <div class="modal-content-console">
+            <div class="modal-header-console">
+                <h3>
+                    <i class="fas fa-exclamation-triangle" style="color: #f59e0b;"></i>
+                    Restart VPS
+                </h3>
+                <button class="modal-close" onclick="closeModal('restartModal')">&times;</button>
+            </div>
+            <div class="modal-body-console">
+                <p>Are you sure you want to restart this VPS?</p>
+                <p style="color: #8899aa; margin-top: 0.5rem;">This will disconnect the console session temporarily.</p>
+            </div>
+            <div class="modal-footer-console">
+                <button class="console-btn" onclick="closeModal('restartModal')">Cancel</button>
+                <button class="console-btn danger" onclick="confirmRestart()">Restart VPS</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // VPS Data
+        const vpsData = {
+            id: {{ vps.id }},
+            name: '{{ vps.container_name }}',
+            nodeId: {{ vps.node_id }}
+        };
+        
+        // Terminal variables
+        let terminal = null;
+        let socket = null;
+        let fitAddon = null;
+        let reconnectAttempts = 0;
+        const maxReconnectAttempts = 5;
+        let reconnectTimeout = null;
+        let sessionStartTime = null;
+        let dataReceived = 0;
+        let dataSent = 0;
+        let sessionLogs = [];
+        let currentTab = 'terminal';
+        
+        // DOM elements
+        const statusLed = document.getElementById('statusLed');
+        const statusText = document.getElementById('statusText');
+        const reconnectBtn = document.getElementById('reconnectBtn');
+        const exitBtn = document.getElementById('exitBtn');
+        const fullscreenBtn = document.getElementById('fullscreenBtn');
+        
+        // ==================== TERMINAL INITIALIZATION ====================
+        function initTerminal() {
+            terminal = new Terminal({
+                cursorBlink: true,
+                cursorStyle: 'block',
+                fontSize: 14,
+                fontFamily: 'Menlo, Monaco, "Courier New", monospace',
+                theme: {
+                    background: '#0a0c10',
+                    foreground: '#e6eef9',
+                    cursor: '#667eea',
+                    selectionBackground: '#2d4c7c',
+                    black: '#2e3436',
+                    red: '#f07178',
+                    green: '#a3d6a3',
+                    yellow: '#ffcb6b',
+                    blue: '#5fa3e0',
+                    magenta: '#d39ad4',
+                    cyan: '#7fdbdb',
+                    white: '#eef4f9',
+                },
+                scrollback: 10000,
+                allowProposedApi: true
+            });
+            
+            fitAddon = new FitAddon.FitAddon();
+            terminal.loadAddon(fitAddon);
+            
+            const webLinksAddon = new WebLinksAddon.WebLinksAddon();
+            terminal.loadAddon(webLinksAddon);
+            
+            terminal.open(document.getElementById('terminal'));
+            fitAddon.fit();
+            
+            // Handle terminal input
+            terminal.onData(data => {
+                if (socket && socket.readyState === WebSocket.OPEN) {
+                    socket.send(JSON.stringify({
+                        type: 'input',
+                        data: data
+                    }));
+                    dataSent += new Blob([data]).size;
+                    updateInfoStats();
+                    addToSessionLog('input', data);
+                }
+            });
+            
+            // Handle terminal resize
+            terminal.onResize(size => {
+                if (socket && socket.readyState === WebSocket.OPEN) {
+                    socket.send(JSON.stringify({
+                        type: 'resize',
+                        cols: size.cols,
+                        rows: size.rows
+                    }));
+                }
+            });
+            
+            // Track cursor position
+            terminal.onCursorMove(() => {
+                const buffer = terminal.buffer.active;
+                const cursorY = buffer.cursorY + 1;
+                const cursorX = buffer.cursorX + 1;
+                document.getElementById('cursorPosition').innerHTML = 
+                    `<i class="fas fa-cursor"></i> Ln ${cursorY}, Col ${cursorX}`;
+            });
+            
+            window.addEventListener('resize', () => {
+                if (fitAddon && currentTab === 'terminal') {
+                    setTimeout(() => fitAddon.fit(), 100);
+                }
+            });
+        }
+        
+        // ==================== WEBSOCKET CONNECTION ====================
+        function connectWebSocket() {
+            const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+            const wsUrl = `${protocol}//${window.location.host}/ws/console/${vpsData.id}`;
+            
+            updateConnectionStatus('connecting', 'Connecting...');
+            
+            socket = new WebSocket(wsUrl);
+            
+            socket.onopen = () => {
+                console.log('WebSocket connected');
+                updateConnectionStatus('connected', 'Connected');
+                sessionStartTime = new Date();
+                reconnectAttempts = 0;
+                
+                terminal.write('\r\n\x1b[32m╔═══════════════════════════════════════════════════════════╗\x1b[0m\r\n');
+                terminal.write('\x1b[32m║              ✓ Connected to console session                ║\x1b[0m\r\n');
+                terminal.write('\x1b[32m╚═══════════════════════════════════════════════════════════╝\x1b[0m\r\n');
+                terminal.write(`\x1b[33m• Session started at ${sessionStartTime.toLocaleString()}\x1b[0m\r\n`);
+                terminal.write('\x1b[33m• Type "exit" to close the session\x1b[0m\r\n\n');
+                
+                showToast('Connected to console', 'success');
+                updateInfoPanel();
+            };
+            
+            socket.onmessage = (event) => {
+                try {
+                    const data = JSON.parse(event.data);
+                    
+                    if (data.type === 'output') {
+                        if (terminal && currentTab === 'terminal') {
+                            terminal.write(data.data);
+                        }
+                        dataReceived += new Blob([data.data]).size;
+                        updateInfoStats();
+                        addToSessionLog('output', data.data);
+                    } else if (data.type === 'error') {
+                        terminal.write(`\r\n\x1b[31mError: ${data.message}\x1b[0m\r\n`);
+                        showToast(data.message, 'error');
+                    } else if (data.type === 'connected') {
+                        terminal.write(`\r\n\x1b[32m${data.message}\x1b[0m\r\n`);
+                    }
+                } catch (e) {
+                    console.error('Error parsing message:', e);
+                }
+            };
+            
+            socket.onclose = () => {
+                console.log('WebSocket disconnected');
+                updateConnectionStatus('disconnected', 'Disconnected');
+                terminal.write('\r\n\x1b[31m✗ Connection closed\x1b[0m\r\n');
+                
+                if (reconnectAttempts < maxReconnectAttempts) {
+                    reconnectAttempts++;
+                    const delay = Math.min(1000 * Math.pow(2, reconnectAttempts), 30000);
+                    terminal.write(`\x1b[33m⚠ Attempting to reconnect (${reconnectAttempts}/${maxReconnectAttempts}) in ${delay/1000}s...\x1b[0m\r\n`);
+                    
+                    if (reconnectTimeout) clearTimeout(reconnectTimeout);
+                    reconnectTimeout = setTimeout(connectWebSocket, delay);
+                } else {
+                    terminal.write('\x1b[31m✗ Max reconnection attempts reached. Please reconnect manually.\x1b[0m\r\n');
+                    showToast('Connection lost. Please refresh the page.', 'error');
+                }
+            };
+            
+            socket.onerror = (error) => {
+                console.error('WebSocket error:', error);
+                showToast('Connection error', 'error');
+            };
+        }
+        
+        function updateConnectionStatus(status, text) {
+            statusLed.className = `status-led ${status}`;
+            statusText.textContent = text;
+            
+            const statusBadge = document.getElementById('statusBadge');
+            if (statusBadge) {
+                if (status === 'connected') {
+                    statusBadge.className = 'status-badge running';
+                    statusBadge.innerHTML = '<i class="fas fa-circle"></i> Connected';
+                } else if (status === 'connecting') {
+                    statusBadge.className = 'status-badge';
+                    statusBadge.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Connecting';
+                } else {
+                    statusBadge.className = 'status-badge stopped';
+                    statusBadge.innerHTML = '<i class="fas fa-circle"></i> Disconnected';
+                }
+            }
+        }
+        
+        // ==================== SESSION LOGS ====================
+        function addToSessionLog(type, data) {
+            sessionLogs.push({
+                type: type,
+                data: data,
+                timestamp: new Date().toISOString()
+            });
+            
+            if (currentTab === 'logs') {
+                updateLogsDisplay();
+            }
+        }
+        
+        function updateLogsDisplay() {
+            const logsContainer = document.getElementById('sessionLogs');
+            if (logsContainer && currentTab === 'logs') {
+                let html = '<div style="padding: 1rem;">';
+                html += '<h4 style="margin-bottom: 1rem; color: #667eea;"><i class="fas fa-history"></i> Session History</h4>';
+                
+                if (sessionLogs.length === 0) {
+                    html += '<p style="color: #8899aa; text-align: center;">No logs yet</p>';
+                } else {
+                    sessionLogs.slice(-100).forEach((log, index) => {
+                        const time = new Date(log.timestamp).toLocaleTimeString();
+                        const color = log.type === 'input' ? '#10b981' : '#8899aa';
+                        const icon = log.type === 'input' ? 'fa-arrow-right' : 'fa-arrow-left';
+                        const displayData = log.data.replace(/</g, '&lt;').replace(/>/g, '&gt;').substring(0, 200);
+                        
+                        html += `<div class="log-entry" style="animation-delay: ${index * 0.02}s;">
+                            <span style="color: #666; font-size: 0.7rem;">[${time}]</span>
+                            <span style="color: ${color}; margin-left: 0.5rem;">
+                                <i class="fas ${icon}"></i> ${displayData}
+                            </span>
+                        </div>`;
+                    });
+                }
+                
+                html += '</div>';
+                logsContainer.innerHTML = html;
+            }
+        }
+        
+        // ==================== INFO PANEL ====================
+        function updateInfoPanel() {
+            const infoPanel = document.getElementById('infoPanel');
+            if (!infoPanel) return;
+            
+            const duration = sessionStartTime ? Math.floor((new Date() - sessionStartTime) / 1000) : 0;
+            const hours = Math.floor(duration / 3600);
+            const minutes = Math.floor((duration % 3600) / 60);
+            const seconds = duration % 60;
+            
+            infoPanel.innerHTML = `
+                <div class="info-section">
+                    <div class="info-section-title">
+                        <i class="fas fa-plug"></i> Connection Information
+                    </div>
+                    <div class="info-grid">
+                        <div class="info-item">
+                            <span class="info-label">Status</span>
+                            <span class="info-value" style="color: #10b981;">Connected</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">Session Duration</span>
+                            <span class="info-value">${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">Data Received</span>
+                            <span class="info-value" id="infoDataReceived">${(dataReceived / 1024).toFixed(2)} KB</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">Data Sent</span>
+                            <span class="info-value" id="infoDataSent">${(dataSent / 1024).toFixed(2)} KB</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">Commands Sent</span>
+                            <span class="info-value">${sessionLogs.filter(l => l.type === 'input' && l.data === '\r').length}</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">Reconnect Attempts</span>
+                            <span class="info-value">${reconnectAttempts}</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="info-section">
+                    <div class="info-section-title">
+                        <i class="fas fa-keyboard"></i> Keyboard Shortcuts
+                    </div>
+                    <div class="shortcuts-grid">
+                        <div class="shortcut-item"><span class="shortcut-key">Ctrl+C</span><span>Interrupt</span></div>
+                        <div class="shortcut-item"><span class="shortcut-key">Ctrl+L</span><span>Clear screen</span></div>
+                        <div class="shortcut-item"><span class="shortcut-key">Ctrl+D</span><span>Exit shell</span></div>
+                        <div class="shortcut-item"><span class="shortcut-key">Ctrl+Z</span><span>Suspend process</span></div>
+                        <div class="shortcut-item"><span class="shortcut-key">↑/↓</span><span>Command history</span></div>
+                        <div class="shortcut-item"><span class="shortcut-key">Tab</span><span>Auto-complete</span></div>
+                        <div class="shortcut-item"><span class="shortcut-key">Ctrl+A</span><span>Line start</span></div>
+                        <div class="shortcut-item"><span class="shortcut-key">Ctrl+E</span><span>Line end</span></div>
+                    </div>
+                </div>
+                
+                <div class="info-section">
+                    <div class="info-section-title">
+                        <i class="fas fa-server"></i> VPS Information
+                    </div>
+                    <div class="info-grid">
+                        <div class="info-item">
+                            <span class="info-label">Name</span>
+                            <span class="info-value">${vpsData.name}</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">OS</span>
+                            <span class="info-value">{{ vps.os_version }}</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">CPU</span>
+                            <span class="info-value">{{ vps.cpu }} Cores</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">RAM</span>
+                            <span class="info-value">{{ vps.ram }}</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">Storage</span>
+                            <span class="info-value">{{ vps.storage }}</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">Node ID</span>
+                            <span class="info-value">{{ vps.node_id }}</span>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+        
+        function updateInfoStats() {
+            const dataReceivedEl = document.getElementById('infoDataReceived');
+            const dataSentEl = document.getElementById('infoDataSent');
+            if (dataReceivedEl) dataReceivedEl.textContent = (dataReceived / 1024).toFixed(2) + ' KB';
+            if (dataSentEl) dataSentEl.textContent = (dataSent / 1024).toFixed(2) + ' KB';
+            
+            document.getElementById('dataReceived').textContent = (dataReceived / 1024).toFixed(2) + ' KB';
+            document.getElementById('dataSent').textContent = (dataSent / 1024).toFixed(2) + ' KB';
+        }
+        
+        // ==================== TAB SWITCHING ====================
+        function switchTab(tab, btnElement) {
+            currentTab = tab;
+            
+            // Update tab buttons
+            document.querySelectorAll('.terminal-tab').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            btnElement.classList.add('active');
+            
+            // Hide all panels
+            document.getElementById('terminal').style.display = 'none';
+            document.getElementById('sessionLogs').classList.remove('active');
+            document.getElementById('infoPanel').classList.remove('active');
+            
+            if (tab === 'terminal') {
+                document.getElementById('terminal').style.display = 'block';
+                setTimeout(() => fitAddon.fit(), 100);
+            } else if (tab === 'logs') {
+                document.getElementById('sessionLogs').classList.add('active');
+                updateLogsDisplay();
+            } else if (tab === 'info') {
+                document.getElementById('infoPanel').classList.add('active');
+                updateInfoPanel();
+            }
+        }
+        
+        // ==================== UTILITY FUNCTIONS ====================
+        function reconnectConsole() {
+            if (socket) socket.close();
+            if (reconnectTimeout) clearTimeout(reconnectTimeout);
+            reconnectAttempts = 0;
+            connectWebSocket();
+            showToast('Reconnecting...', 'info');
+        }
+        
+        function clearTerminal() {
+            if (terminal) {
+                terminal.clear();
+                showToast('Terminal cleared', 'success');
+            }
+        }
+        
+        function copyToClipboard() {
+            if (terminal && terminal.hasSelection()) {
+                const selection = terminal.getSelection();
+                navigator.clipboard.writeText(selection).then(() => {
+                    showToast('Copied to clipboard', 'success');
+                }).catch(() => {
+                    showToast('Failed to copy', 'error');
+                });
+            } else {
+                showToast('No text selected', 'warning');
+            }
+        }
+        
+        function pasteFromClipboard() {
+            navigator.clipboard.readText().then(text => {
+                if (socket && socket.readyState === WebSocket.OPEN && text) {
+                    socket.send(JSON.stringify({ type: 'input', data: text }));
+                    showToast('Pasted from clipboard', 'success');
+                }
+            }).catch(() => {
+                showToast('Failed to paste', 'error');
+            });
+        }
+        
+        function downloadSession() {
+            let logContent = '';
+            sessionLogs.forEach(log => {
+                logContent += `[${new Date(log.timestamp).toISOString()}] ${log.type.toUpperCase()}: ${log.data}\n`;
+            });
+            
+            const blob = new Blob([logContent], { type: 'text/plain' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `console-session-${new Date().toISOString().slice(0,19)}.log`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            showToast('Session log downloaded', 'success');
+        }
+        
+        function exitConsole() {
+            if (socket && socket.readyState === WebSocket.OPEN) {
+                socket.close();
+            }
+            window.location.href = `/vps/${vpsData.id}`;
+        }
+        
+        function showRestartModal() {
+            document.getElementById('restartModal').classList.add('active');
+        }
+        
+        function closeModal(modalId) {
+            document.getElementById(modalId).classList.remove('active');
+        }
+        
+        async function confirmRestart() {
+            closeModal('restartModal');
+            showToast('Restarting VPS...', 'warning');
+            
+            try {
+                const response = await fetch(`/vps/${vpsData.id}/control/restart`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' }
+                });
+                const data = await response.json();
+                
+                if (data.success) {
+                    showToast('VPS restart initiated', 'success');
+                    if (socket) socket.close();
+                    setTimeout(() => {
+                        reconnectConsole();
+                    }, 5000);
+                } else {
+                    showToast('Failed to restart VPS: ' + data.error, 'error');
+                }
+            } catch (error) {
+                showToast('Error restarting VPS', 'error');
+                console.error('Restart error:', error);
+            }
+        }
+        
+        function showToast(message, type = 'info') {
+            const container = document.getElementById('toastContainer');
+            const toast = document.createElement('div');
+            toast.className = `toast-notification ${type}`;
+            
+            let icon = 'fa-info-circle';
+            if (type === 'success') icon = 'fa-check-circle';
+            if (type === 'error') icon = 'fa-exclamation-circle';
+            if (type === 'warning') icon = 'fa-exclamation-triangle';
+            
+            toast.innerHTML = `<i class="fas ${icon}"></i> ${message}`;
+            container.appendChild(toast);
+            
+            setTimeout(() => {
+                toast.style.animation = 'slideInLeft 0.3s ease reverse';
+                setTimeout(() => toast.remove(), 300);
+            }, 4000);
+        }
+        
+        // ==================== EVENT LISTENERS ====================
+        reconnectBtn.addEventListener('click', reconnectConsole);
+        exitBtn.addEventListener('click', exitConsole);
+        
+        fullscreenBtn.addEventListener('click', () => {
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen();
+                fullscreenBtn.innerHTML = '<i class="fas fa-compress"></i><span>Exit</span>';
+            } else {
+                document.exitFullscreen();
+                fullscreenBtn.innerHTML = '<i class="fas fa-expand"></i><span>Fullscreen</span>';
+            }
+        });
+        
+        document.addEventListener('fullscreenchange', () => {
+            if (document.fullscreenElement) {
+                fullscreenBtn.innerHTML = '<i class="fas fa-compress"></i><span>Exit</span>';
+            } else {
+                fullscreenBtn.innerHTML = '<i class="fas fa-expand"></i><span>Fullscreen</span>';
+            }
+            setTimeout(() => fitAddon.fit(), 100);
+        });
+        
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'F11') {
+                e.preventDefault();
+                fullscreenBtn.click();
+            }
+            
+            // Ctrl+Shift+C for copy
+            if (e.ctrlKey && e.shiftKey && e.key === 'C') {
+                e.preventDefault();
+                copyToClipboard();
+            }
+            
+            // Ctrl+Shift+V for paste
+            if (e.ctrlKey && e.shiftKey && e.key === 'V') {
+                e.preventDefault();
+                pasteFromClipboard();
+            }
+        });
+        
+        window.addEventListener('beforeunload', () => {
+            if (socket && socket.readyState === WebSocket.OPEN) {
+                socket.close();
+            }
+        });
+        
+        // ==================== INITIALIZATION ====================
+        initTerminal();
+        connectWebSocket();
+        
+        // Add action buttons to toolbar
+        const toolbar = document.querySelector('.action-buttons-console');
+        if (toolbar) {
+            const clearBtn = document.createElement('button');
+            clearBtn.className = 'console-btn';
+            clearBtn.innerHTML = '<i class="fas fa-eraser"></i><span>Clear</span>';
+            clearBtn.onclick = clearTerminal;
+            
+            const copyBtn = document.createElement('button');
+            copyBtn.className = 'console-btn';
+            copyBtn.innerHTML = '<i class="fas fa-copy"></i><span>Copy</span>';
+            copyBtn.onclick = copyToClipboard;
+            
+            const pasteBtn = document.createElement('button');
+            pasteBtn.className = 'console-btn';
+            pasteBtn.innerHTML = '<i class="fas fa-paste"></i><span>Paste</span>';
+            pasteBtn.onclick = pasteFromClipboard;
+            
+            const downloadBtn = document.createElement('button');
+            downloadBtn.className = 'console-btn';
+            downloadBtn.innerHTML = '<i class="fas fa-download"></i><span>Download</span>';
+            downloadBtn.onclick = downloadSession;
+            
+            const restartBtn = document.createElement('button');
+            restartBtn.className = 'console-btn danger';
+            restartBtn.innerHTML = '<i class="fas fa-power-off"></i><span>Restart</span>';
+            restartBtn.onclick = showRestartModal;
+            
+            toolbar.appendChild(clearBtn);
+            toolbar.appendChild(copyBtn);
+            toolbar.appendChild(pasteBtn);
+            toolbar.appendChild(downloadBtn);
+            toolbar.appendChild(restartBtn);
+        }
+        
+        // Start periodic stats update
+        setInterval(() => {
+            if (sessionStartTime && currentTab === 'info') {
+                updateInfoPanel();
+            }
+            updateInfoStats();
+        }, 1000);
+    </script>
+</body>
+</html>

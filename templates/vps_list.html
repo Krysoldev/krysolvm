@@ -1,0 +1,1577 @@
+{% extends "base.html" %}
+
+{% block title %}My VPS - {{ panel_name }}{% endblock %}
+
+{% block header_title %}My Virtual Private Servers{% endblock %}
+
+{% block breadcrumbs %}
+<div class="breadcrumb">
+    <a href="{{ url_for('dashboard') }}" class="breadcrumb-item">Dashboard</a>
+    <span class="breadcrumb-separator"><i class="fas fa-chevron-right"></i></span>
+    <span class="breadcrumb-item active">My VPS</span>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* Premium VPS List Styles */
+    :root {
+        --gradient-primary: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        --gradient-success: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+        --gradient-warning: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        --gradient-danger: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+    }
+    
+    .vps-list-container {
+        animation: fadeIn 0.5s ease-in;
+    }
+    
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+    
+    /* Header Section */
+    .page-header {
+        background: var(--gradient-primary);
+        border-radius: 20px;
+        padding: 2.5rem 2rem;
+        margin-bottom: 2rem;
+        color: white;
+        position: relative;
+        overflow: hidden;
+        box-shadow: 0 15px 40px rgba(102, 126, 234, 0.3);
+    }
+    
+    .page-header::before {
+        content: '';
+        position: absolute;
+        top: -50%;
+        right: -10%;
+        width: 300px;
+        height: 300px;
+        background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
+        border-radius: 50%;
+        animation: float 5s ease-in-out infinite;
+    }
+    
+    @keyframes float {
+        0%, 100% { transform: translateY(0) rotate(0deg); }
+        50% { transform: translateY(-15px) rotate(3deg); }
+    }
+    
+    .page-header-content {
+        position: relative;
+        z-index: 1;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 1.5rem;
+    }
+    
+    .page-header h1 {
+        font-size: 2rem;
+        font-weight: 800;
+        margin-bottom: 0.5rem;
+    }
+    
+    .page-header p {
+        opacity: 0.95;
+        font-size: 1.05rem;
+    }
+    
+    .header-btn {
+        padding: 0.875rem 2rem;
+        border-radius: 12px;
+        background: white;
+        color: #667eea;
+        font-weight: 700;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        transition: all 0.3s ease;
+        border: none;
+        box-shadow: 0 8px 20px rgba(0,0,0,0.2);
+    }
+    
+    .header-btn:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 12px 30px rgba(0,0,0,0.3);
+    }
+    
+    /* Premium Stats Cards */
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        gap: 1.5rem;
+        margin-bottom: 2rem;
+    }
+    
+    .premium-stat {
+        background: var(--card-bg);
+        border: 1px solid var(--border-color);
+        border-radius: 16px;
+        padding: 1.75rem;
+        position: relative;
+        overflow: hidden;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    
+    .premium-stat::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 3px;
+        background: var(--gradient);
+        opacity: 0;
+        transition: opacity 0.3s ease;
+    }
+    
+    .premium-stat:hover {
+        transform: translateY(-6px);
+        box-shadow: 0 15px 35px rgba(0,0,0,0.3);
+        border-color: transparent;
+    }
+    
+    .premium-stat:hover::before {
+        opacity: 1;
+    }
+    
+    .stat-icon-box {
+        width: 56px;
+        height: 56px;
+        border-radius: 14px;
+        background: var(--gradient);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-bottom: 1rem;
+        box-shadow: 0 8px 16px rgba(0,0,0,0.2);
+    }
+    
+    .stat-icon-box i {
+        font-size: 1.5rem;
+        color: white;
+    }
+    
+    .stat-value-large {
+        font-size: 2.25rem;
+        font-weight: 800;
+        color: var(--text-primary);
+        line-height: 1;
+        margin-bottom: 0.5rem;
+    }
+    
+    .stat-label-text {
+        font-size: 0.875rem;
+        color: var(--text-muted);
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+    
+    /* Toolbar */
+    .toolbar-card {
+        background: var(--card-bg);
+        border: 1px solid var(--border-color);
+        border-radius: 16px;
+        padding: 1.5rem;
+        margin-bottom: 2rem;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    }
+    
+    .toolbar-content {
+        display: flex;
+        gap: 1rem;
+        flex-wrap: wrap;
+        align-items: center;
+    }
+    
+    .search-box {
+        flex: 1;
+        min-width: 280px;
+        position: relative;
+    }
+    
+    .search-box input {
+        width: 100%;
+        padding: 0.875rem 1rem 0.875rem 3rem;
+        border: 2px solid var(--border-color);
+        border-radius: 12px;
+        background: var(--bg-secondary);
+        color: var(--text-primary);
+        font-size: 0.95rem;
+        transition: all 0.3s ease;
+    }
+    
+    .search-box input:focus {
+        border-color: #667eea;
+        box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        outline: none;
+    }
+    
+    .search-icon {
+        position: absolute;
+        left: 1rem;
+        top: 50%;
+        transform: translateY(-50%);
+        color: var(--text-muted);
+        pointer-events: none;
+    }
+    
+    .filter-select {
+        padding: 0.875rem 1rem;
+        border: 2px solid var(--border-color);
+        border-radius: 12px;
+        background: var(--bg-secondary);
+        color: var(--text-primary);
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        min-width: 160px;
+    }
+    
+    .filter-select:focus {
+        border-color: #667eea;
+        outline: none;
+    }
+    
+    .view-toggle {
+        display: flex;
+        gap: 0;
+        border: 2px solid var(--border-color);
+        border-radius: 12px;
+        overflow: hidden;
+    }
+    
+    .view-btn {
+        padding: 0.875rem 1.25rem;
+        background: var(--bg-secondary);
+        border: none;
+        color: var(--text-muted);
+        cursor: pointer;
+        transition: all 0.3s ease;
+        font-size: 1rem;
+    }
+    
+    .view-btn:hover {
+        background: var(--hover-bg);
+        color: var(--text-primary);
+    }
+    
+    .view-btn.active {
+        background: var(--gradient-primary);
+        color: white;
+    }
+    
+    .refresh-btn {
+        padding: 0.875rem 1.25rem;
+        border: 2px solid var(--border-color);
+        border-radius: 12px;
+        background: var(--bg-secondary);
+        color: var(--text-primary);
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+    
+    .refresh-btn:hover {
+        background: var(--gradient-primary);
+        color: white;
+        border-color: transparent;
+        transform: rotate(180deg);
+    }
+    
+    /* Premium VPS Cards */
+    .vps-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
+        gap: 1.5rem;
+    }
+    
+    .vps-grid.list-view {
+        grid-template-columns: 1fr;
+    }
+    
+    .vps-card {
+        background: var(--card-bg);
+        border: 1px solid var(--border-color);
+        border-radius: 20px;
+        padding: 1.75rem;
+        transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        position: relative;
+        overflow: hidden;
+        cursor: pointer;
+    }
+    
+    .vps-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 4px;
+        background: var(--gradient-primary);
+        opacity: 0;
+        transition: opacity 0.3s ease;
+    }
+    
+    .vps-card:hover {
+        transform: translateY(-6px);
+        box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+        border-color: transparent;
+    }
+    
+    .vps-card:hover::before {
+        opacity: 1;
+    }
+    
+    .vps-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        margin-bottom: 1.5rem;
+        gap: 1rem;
+    }
+    
+    .vps-identity {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        flex: 1;
+    }
+    
+    .vps-avatar {
+        width: 56px;
+        height: 56px;
+        border-radius: 14px;
+        background: var(--gradient-primary);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-size: 1.5rem;
+        box-shadow: 0 8px 16px rgba(102, 126, 234, 0.3);
+        flex-shrink: 0;
+    }
+    
+    .vps-info h3 {
+        font-size: 1.25rem;
+        font-weight: 700;
+        margin-bottom: 0.5rem;
+        color: var(--text-primary);
+    }
+    
+    .vps-meta {
+        display: flex;
+        gap: 0.75rem;
+        flex-wrap: wrap;
+    }
+    
+    .meta-badge {
+        padding: 0.25rem 0.75rem;
+        border-radius: 8px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        background: rgba(102, 126, 234, 0.1);
+        color: #667eea;
+    }
+    
+    .status-badge-premium {
+        padding: 0.5rem 1rem;
+        border-radius: 20px;
+        font-weight: 700;
+        font-size: 0.875rem;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        flex-shrink: 0;
+    }
+    
+    .status-badge-premium.running {
+        background: rgba(17, 153, 142, 0.15);
+        color: #11998e;
+        border: 2px solid rgba(17, 153, 142, 0.3);
+    }
+    
+    .status-badge-premium.stopped {
+        background: rgba(107, 114, 128, 0.15);
+        color: #6b7280;
+        border: 2px solid rgba(107, 114, 128, 0.3);
+    }
+    
+    .status-badge-premium.suspended {
+        background: rgba(240, 147, 251, 0.15);
+        color: #f093fb;
+        border: 2px solid rgba(240, 147, 251, 0.3);
+    }
+    
+    .status-badge-premium.installing {
+        background: rgba(59, 130, 246, 0.15);
+        color: #3b82f6;
+        border: 2px solid rgba(59, 130, 246, 0.3);
+    }
+    
+    .status-badge-premium.transferring {
+        background: rgba(168, 85, 247, 0.15);
+        color: #a855f7;
+        border: 2px solid rgba(168, 85, 247, 0.3);
+    }
+    
+    .status-dot-animated {
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        background: currentColor;
+        animation: pulse-dot 2s ease-in-out infinite;
+    }
+    
+    @keyframes pulse-dot {
+        0%, 100% { opacity: 1; transform: scale(1); }
+        50% { opacity: 0.6; transform: scale(1.2); }
+    }
+    
+    .resources-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 1rem;
+        margin-bottom: 1.5rem;
+        padding: 1.25rem;
+        background: rgba(102, 126, 234, 0.03);
+        border-radius: 12px;
+    }
+    
+    .resource-item {
+        text-align: center;
+    }
+    
+    .resource-icon {
+        width: 40px;
+        height: 40px;
+        margin: 0 auto 0.5rem;
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.125rem;
+    }
+    
+    .resource-icon.cpu {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+    }
+    
+    .resource-icon.ram {
+        background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+        color: white;
+    }
+    
+    .resource-icon.disk {
+        background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        color: white;
+    }
+    
+    .resource-label {
+        font-size: 0.75rem;
+        color: var(--text-muted);
+        margin-bottom: 0.25rem;
+        font-weight: 600;
+        text-transform: uppercase;
+    }
+    
+    .resource-value {
+        font-size: 1rem;
+        font-weight: 700;
+        color: var(--text-primary);
+    }
+    
+    .ip-box {
+        padding: 1rem;
+        background: linear-gradient(135deg, rgba(102, 126, 234, 0.05) 0%, rgba(118, 75, 162, 0.05) 100%);
+        border-radius: 12px;
+        margin-bottom: 1.5rem;
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        font-family: 'Courier New', monospace;
+        font-weight: 600;
+        border: 1px solid rgba(102, 126, 234, 0.1);
+    }
+    
+    .ip-icon {
+        width: 36px;
+        height: 36px;
+        border-radius: 8px;
+        background: var(--gradient-primary);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+    }
+    
+    .performance-section {
+        padding: 1.25rem;
+        background: rgba(102, 126, 234, 0.03);
+        border-radius: 12px;
+        margin-bottom: 1.5rem;
+    }
+    
+    .performance-header {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        margin-bottom: 1rem;
+        font-weight: 700;
+        color: var(--text-primary);
+    }
+    
+    .metric-row {
+        margin-bottom: 1rem;
+    }
+    
+    .metric-row:last-child {
+        margin-bottom: 0;
+    }
+    
+    .metric-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 0.5rem;
+    }
+    
+    .metric-label {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        font-size: 0.875rem;
+        font-weight: 600;
+    }
+    
+    .metric-value {
+        font-size: 0.875rem;
+        font-weight: 700;
+        color: var(--text-primary);
+    }
+    
+    .progress-bar-premium {
+        height: 10px;
+        background: rgba(0,0,0,0.1);
+        border-radius: 10px;
+        overflow: hidden;
+        position: relative;
+    }
+    
+    .progress-fill {
+        height: 100%;
+        border-radius: 10px;
+        transition: width 0.5s ease, background 0.3s ease;
+        position: relative;
+        overflow: hidden;
+    }
+    
+    .progress-fill::after {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+        animation: shimmer 2s infinite;
+    }
+    
+    @keyframes shimmer {
+        0% { transform: translateX(-100%); }
+        100% { transform: translateX(100%); }
+    }
+    
+    .progress-fill.success {
+        background: var(--gradient-success);
+    }
+    
+    .progress-fill.warning {
+        background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+    }
+    
+    .progress-fill.danger {
+        background: var(--gradient-danger);
+    }
+    
+    .expiration-alert {
+        padding: 1rem;
+        border-radius: 12px;
+        margin-bottom: 1.5rem;
+        border-left: 4px solid;
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+    }
+    
+    .expiration-alert.critical {
+        background: rgba(239, 68, 68, 0.1);
+        border-color: #ef4444;
+    }
+    
+    .expiration-alert.warning {
+        background: rgba(245, 158, 11, 0.1);
+        border-color: #f59e0b;
+    }
+    
+    .expiration-alert.info {
+        background: rgba(59, 130, 246, 0.1);
+        border-color: #3b82f6;
+    }
+    
+    .expiration-icon {
+        width: 40px;
+        height: 40px;
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.125rem;
+        flex-shrink: 0;
+    }
+    
+    .expiration-alert.critical .expiration-icon {
+        background: rgba(239, 68, 68, 0.2);
+        color: #ef4444;
+    }
+    
+    .expiration-alert.warning .expiration-icon {
+        background: rgba(245, 158, 11, 0.2);
+        color: #f59e0b;
+    }
+    
+    .expiration-alert.info .expiration-icon {
+        background: rgba(59, 130, 246, 0.2);
+        color: #3b82f6;
+    }
+    
+    .action-buttons {
+        display: flex;
+        gap: 0.75rem;
+        flex-wrap: wrap;
+    }
+    
+    .action-btn-premium {
+        flex: 1;
+        min-width: 120px;
+        padding: 0.875rem 1.25rem;
+        border-radius: 12px;
+        font-weight: 700;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+        transition: all 0.3s ease;
+        border: 2px solid;
+        cursor: pointer;
+    }
+    
+    .action-btn-premium.primary {
+        background: var(--gradient-primary);
+        border-color: transparent;
+        color: white;
+    }
+    
+    .action-btn-premium.primary:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 20px rgba(102, 126, 234, 0.4);
+    }
+    
+    .action-btn-premium.outline {
+        background: transparent;
+        border-color: var(--border-color);
+        color: var(--text-primary);
+    }
+    
+    .action-btn-premium.outline:hover {
+        background: var(--hover-bg);
+        border-color: #667eea;
+        color: #667eea;
+    }
+    
+    /* Empty State */
+    .empty-state-premium {
+        text-align: center;
+        padding: 5rem 2rem;
+        background: var(--card-bg);
+        border: 2px dashed var(--border-color);
+        border-radius: 20px;
+    }
+    
+    .empty-icon-large {
+        width: 120px;
+        height: 120px;
+        margin: 0 auto 2rem;
+        border-radius: 50%;
+        background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        animation: float 3s ease-in-out infinite;
+    }
+    
+    .empty-icon-large i {
+        font-size: 3.5rem;
+        color: var(--text-muted);
+        opacity: 0.5;
+    }
+    
+    .empty-state-premium h3 {
+        font-size: 1.75rem;
+        font-weight: 700;
+        margin-bottom: 0.75rem;
+        color: var(--text-primary);
+    }
+    
+    .empty-state-premium p {
+        color: var(--text-muted);
+        font-size: 1.05rem;
+        margin-bottom: 2rem;
+    }
+    
+    /* Alert Banner */
+    .alert-banner {
+        background: linear-gradient(135deg, rgba(245, 158, 11, 0.1) 0%, rgba(217, 119, 6, 0.1) 100%);
+        border: 2px solid rgba(245, 158, 11, 0.3);
+        border-radius: 16px;
+        padding: 1.5rem;
+        margin-bottom: 2rem;
+        display: flex;
+        align-items: center;
+        gap: 1.5rem;
+    }
+    
+    .alert-icon-box {
+        width: 56px;
+        height: 56px;
+        border-radius: 14px;
+        background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-size: 1.5rem;
+        flex-shrink: 0;
+    }
+    
+    .alert-content {
+        flex: 1;
+    }
+    
+    .alert-content strong {
+        display: block;
+        font-size: 1.125rem;
+        margin-bottom: 0.5rem;
+        color: var(--text-primary);
+    }
+    
+    .alert-content p {
+        margin: 0;
+        color: var(--text-muted);
+    }
+    
+    /* Mobile Responsive */
+    @media (max-width: 768px) {
+        .page-header {
+            padding: 2rem 1.5rem;
+        }
+        
+        .page-header h1 {
+            font-size: 1.5rem;
+        }
+        
+        .page-header-content {
+            flex-direction: column;
+            align-items: flex-start;
+        }
+        
+        .header-btn {
+            width: 100%;
+            justify-content: center;
+        }
+        
+        .stats-grid {
+            grid-template-columns: repeat(2, 1fr);
+        }
+        
+        .vps-grid {
+            grid-template-columns: 1fr;
+        }
+        
+        .toolbar-content {
+            flex-direction: column;
+        }
+        
+        .search-box {
+            width: 100%;
+        }
+        
+        .filter-select {
+            width: 100%;
+        }
+        
+        .view-toggle {
+            width: 100%;
+        }
+        
+        .view-btn {
+            flex: 1;
+        }
+        
+        .resources-grid {
+            grid-template-columns: 1fr;
+        }
+        
+        .action-buttons {
+            flex-direction: column;
+        }
+        
+        .action-btn-premium {
+            width: 100%;
+        }
+    }
+    
+    @media (max-width: 480px) {
+        .stats-grid {
+            grid-template-columns: 1fr;
+        }
+        
+        .vps-meta {
+            flex-direction: column;
+            align-items: flex-start;
+        }
+    }
+    
+    /* Modal Styles */
+    .modal-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.75);
+        backdrop-filter: blur(4px);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 9999;
+        padding: 1rem;
+        animation: fadeIn 0.3s ease;
+    }
+    
+    .modal-content {
+        background: var(--card-bg);
+        border-radius: 20px;
+        padding: 2rem;
+        max-width: 600px;
+        width: 100%;
+        max-height: 90vh;
+        overflow-y: auto;
+        box-shadow: 0 25px 50px rgba(0, 0, 0, 0.5);
+        animation: slideUp 0.3s ease;
+        border: 1px solid var(--border-color);
+    }
+    
+    @keyframes slideUp {
+        from {
+            opacity: 0;
+            transform: translateY(30px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+    
+    .modal-content h3 {
+        font-size: 1.5rem;
+        font-weight: 700;
+        margin-bottom: 1rem;
+        color: var(--text-primary);
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+    }
+    
+    .modal-content h3 i {
+        width: 40px;
+        height: 40px;
+        border-radius: 10px;
+        background: var(--gradient-warning);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+    }
+    
+    .modal-expiring-list {
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+        margin-bottom: 1.5rem;
+    }
+    
+    .modal-expiring-item {
+        padding: 1.25rem;
+        background: rgba(102, 126, 234, 0.05);
+        border-radius: 12px;
+        border-left: 4px solid;
+        transition: all 0.3s ease;
+    }
+    
+    .modal-expiring-item:hover {
+        background: rgba(102, 126, 234, 0.1);
+        transform: translateX(4px);
+    }
+    
+    .modal-expiring-item.critical {
+        border-color: #ef4444;
+    }
+    
+    .modal-expiring-item.warning {
+        border-color: #f59e0b;
+    }
+    
+    .modal-expiring-item.info {
+        border-color: #3b82f6;
+    }
+    
+    .modal-item-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        margin-bottom: 0.75rem;
+        gap: 1rem;
+    }
+    
+    .modal-item-name {
+        font-weight: 700;
+        font-size: 1.125rem;
+        margin-bottom: 0.25rem;
+        color: var(--text-primary);
+    }
+    
+    .modal-item-container {
+        font-size: 0.875rem;
+        color: var(--text-muted);
+    }
+    
+    .modal-item-time {
+        font-size: 0.875rem;
+        color: var(--text-muted);
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        margin-bottom: 0.75rem;
+    }
+    
+    .modal-item-actions {
+        display: flex;
+        gap: 0.5rem;
+        flex-wrap: wrap;
+    }
+    
+    .modal-footer {
+        display: flex;
+        justify-content: flex-end;
+        gap: 0.75rem;
+        margin-top: 1.5rem;
+        padding-top: 1.5rem;
+        border-top: 1px solid var(--border-color);
+    }
+    
+    @media (max-width: 768px) {
+        .modal-content {
+            padding: 1.5rem;
+            max-height: 85vh;
+        }
+        
+        .modal-item-header {
+            flex-direction: column;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="vps-list-container">
+    <!-- Page Header -->
+    <div class="page-header">
+        <div class="page-header-content">
+            <div>
+                <h1>Your Virtual Private Servers 🚀</h1>
+                <p>Manage and monitor all your VPS instances in one place</p>
+            </div>
+            {% if current_user.is_admin %}
+            <a href="{{ url_for('admin_vps_create') }}" class="header-btn">
+                <i class="fas fa-plus-circle"></i>
+                <span>Create New VPS</span>
+            </a>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Quick Stats -->
+    <div class="stats-grid">
+        <div class="premium-stat" style="--gradient: var(--gradient-primary);">
+            <div class="stat-icon-box">
+                <i class="fas fa-server"></i>
+            </div>
+            <div class="stat-value-large">{{ vps_list|length }}</div>
+            <div class="stat-label-text">Total VPS</div>
+        </div>
+        
+        <div class="premium-stat" style="--gradient: var(--gradient-success);">
+            <div class="stat-icon-box">
+                <i class="fas fa-play-circle"></i>
+            </div>
+            <div class="stat-value-large">{{ vps_list|selectattr('live_status', 'equalto', 'running')|list|length }}</div>
+            <div class="stat-label-text">Running</div>
+        </div>
+        
+        <div class="premium-stat" style="--gradient: linear-gradient(135deg, #6b7280 0%, #4b5563 100%);">
+            <div class="stat-icon-box">
+                <i class="fas fa-stop-circle"></i>
+            </div>
+            <div class="stat-value-large">{{ vps_list|selectattr('live_status', 'equalto', 'stopped')|list|length }}</div>
+            <div class="stat-label-text">Stopped</div>
+        </div>
+        
+        <div class="premium-stat" style="--gradient: var(--gradient-warning);">
+            <div class="stat-icon-box">
+                <i class="fas fa-ban"></i>
+            </div>
+            <div class="stat-value-large">{{ vps_list|selectattr('suspended', 'equalto', true)|list|length }}</div>
+            <div class="stat-label-text">Suspended</div>
+        </div>
+    </div>
+
+    <!-- Expiring VPS Alert -->
+    {% set expiring_vps = [] %}
+    {% for vps in vps_list %}
+        {% if vps.auto_suspend_enabled and vps.expires_at %}
+            {% set expires_dt = vps.expires_at|parse_datetime %}
+            {% if expires_dt %}
+                {% set current_time = now() %}
+                {% set time_diff = (expires_dt - current_time).total_seconds() %}
+                {% set days_left = (time_diff / 86400)|int %}
+                {% if days_left <= 7 %}
+                    {% set _ = expiring_vps.append(vps) %}
+                {% endif %}
+            {% endif %}
+        {% endif %}
+    {% endfor %}
+
+    {% if expiring_vps|length > 0 %}
+    <div class="alert-banner">
+        <div class="alert-icon-box">
+            <i class="fas fa-exclamation-triangle"></i>
+        </div>
+        <div class="alert-content">
+            <strong>VPS Expiring Soon!</strong>
+            <p>You have {{ expiring_vps|length }} VPS expiring in the next 7 days. Contact admin for renewal.</p>
+        </div>
+        <button class="action-btn-premium primary" onclick="showExpiringVPS()" style="flex: 0 0 auto; min-width: auto;">
+            <i class="fas fa-eye"></i>
+            <span>View Details</span>
+        </button>
+    </div>
+    {% endif %}
+
+    <!-- Toolbar -->
+    <div class="toolbar-card">
+        <div class="toolbar-content">
+            <!-- Search -->
+            <div class="search-box">
+                <i class="fas fa-search search-icon"></i>
+                <input type="text" id="searchVPS" placeholder="Search by name, IP, or ID...">
+            </div>
+            
+            <!-- Status Filter -->
+            <select class="filter-select" id="statusFilter">
+                <option value="all">All Status</option>
+                <option value="running">🟢 Running</option>
+                <option value="stopped">🔴 Stopped</option>
+                <option value="suspended">⚠️ Suspended</option>
+            </select>
+            
+            <!-- View Toggle -->
+            <div class="view-toggle">
+                <button class="view-btn active" id="gridViewBtn" onclick="switchView('grid')" title="Grid View">
+                    <i class="fas fa-th"></i>
+                </button>
+                <button class="view-btn" id="listViewBtn" onclick="switchView('list')" title="List View">
+                    <i class="fas fa-list"></i>
+                </button>
+            </div>
+            
+            <!-- Refresh -->
+            <button class="refresh-btn" onclick="window.location.reload()" title="Refresh">
+                <i class="fas fa-sync-alt"></i>
+            </button>
+        </div>
+    </div>
+
+    <!-- VPS Grid -->
+    <div class="vps-grid" id="vpsGrid">
+        {% if vps_list %}
+            {% for vps in vps_list %}
+            <div class="vps-card" 
+                 data-id="{{ vps.id }}" 
+                 data-name="{{ (vps.hostname or vps.container_name)|lower }}" 
+                 data-ip="{{ (vps.ip_address or vps.ip_alias or '')|lower }}" 
+                 data-status="{% if vps.suspended %}suspended{% else %}{{ vps.live_status }}{% endif %}">
+                
+                <!-- Header -->
+                <div class="vps-header">
+                    <div class="vps-identity">
+                        <div class="vps-avatar">
+                            <i class="fas fa-server"></i>
+                        </div>
+                        <div class="vps-info">
+                            <h3 style="display: flex; align-items: center; gap: 0.5rem;">
+                                <span>{{ vps.hostname or vps.container_name }}</span>
+                                {% if vps.whitelisted %}
+                                <i class="fas fa-star" style="color: #fbbf24; font-size: 1rem;" title="Whitelisted VPS - Protected from auto-suspension"></i>
+                                {% endif %}
+                            </h3>
+                            <div class="vps-meta">
+                                <span class="meta-badge">
+                                    <i class="fas fa-hashtag"></i> {{ vps.id }}
+                                </span>
+                                <span class="meta-badge">
+                                    <i class="fas fa-calendar"></i> {{ vps.created_at|relative_time }}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                    <span class="status-badge-premium {% if vps.suspended %}suspended{% elif vps.live_status == 'transferring' %}transferring{% elif vps.live_status == 'installing' %}installing{% elif vps.live_status == 'running' %}running{% else %}stopped{% endif %}">
+                        <span class="status-dot-animated"></span>
+                        {% if vps.suspended %}Suspended{% elif vps.live_status == 'transferring' %}Transferring{% elif vps.live_status == 'installing' %}Installing{% elif vps.live_status == 'running' %}Running{% else %}Stopped{% endif %}
+                    </span>
+                </div>
+
+                <!-- Resources -->
+                <div class="resources-grid">
+                    <div class="resource-item">
+                        <div class="resource-icon cpu">
+                            <i class="fas fa-microchip"></i>
+                        </div>
+                        <div class="resource-label">CPU</div>
+                        <div class="resource-value">{{ vps.cpu }} Cores</div>
+                    </div>
+                    <div class="resource-item">
+                        <div class="resource-icon ram">
+                            <i class="fas fa-memory"></i>
+                        </div>
+                        <div class="resource-label">RAM</div>
+                        <div class="resource-value">{{ vps.ram }}</div>
+                    </div>
+                    <div class="resource-item">
+                        <div class="resource-icon disk">
+                            <i class="fas fa-hdd"></i>
+                        </div>
+                        <div class="resource-label">Storage</div>
+                        <div class="resource-value">{{ vps.storage }}</div>
+                    </div>
+                </div>
+
+                <!-- IP Address -->
+                <div class="ip-box">
+                    <div class="ip-icon">
+                        <i class="fas fa-globe"></i>
+                    </div>
+                    <div style="flex: 1;">
+                        {% if vps.ip_alias %}
+                        {{ vps.ip_alias }}
+                        <span class="meta-badge" style="margin-left: 0.5rem;">Alias</span>
+                        {% elif vps.ip_address %}
+                        {{ vps.ip_address }}
+                        {% else %}
+                        <span style="color: var(--text-muted);">No IP assigned</span>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Expiration Warning -->
+                {% if vps.auto_suspend_enabled and vps.expires_at %}
+                {% set expires_dt = vps.expires_at|parse_datetime %}
+                {% if expires_dt %}
+                    {% set current_time = now() %}
+                    {% set time_diff = (expires_dt - current_time).total_seconds() %}
+                    {% set days_left = (time_diff / 86400)|int %}
+                    {% set hours_left = (time_diff / 3600)|int %}
+                <div class="expiration-alert {% if days_left < 0 or days_left == 0 %}critical{% elif days_left <= 3 %}warning{% else %}info{% endif %}">
+                    <div class="expiration-icon">
+                        <i class="fas fa-clock"></i>
+                    </div>
+                    <div style="flex: 1;">
+                        <div style="font-weight: 700; margin-bottom: 0.25rem;">
+                            {% if days_left < 0 %}
+                            Expired
+                            {% elif days_left == 0 %}
+                            {{ hours_left }}h remaining
+                            {% else %}
+                            {{ days_left }} days remaining
+                            {% endif %}
+                        </div>
+                        <div style="font-size: 0.75rem; color: var(--text-muted);">
+                            Expires: {{ expires_dt.strftime('%Y-%m-%d %H:%M') }}
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+                {% endif %}
+
+                <!-- Live Performance -->
+                {% if vps.live_status == 'running' and not vps.suspended %}
+                <div class="performance-section">
+                    <div class="performance-header">
+                        <i class="fas fa-chart-line"></i>
+                        <span>Live Performance</span>
+                    </div>
+                    
+                    <!-- CPU -->
+                    <div class="metric-row">
+                        <div class="metric-header">
+                            <div class="metric-label">
+                                <i class="fas fa-microchip" style="color: #667eea;"></i>
+                                <span>CPU</span>
+                            </div>
+                            <span class="metric-value vps-cpu" data-id="{{ vps.id }}">{{ vps.live_cpu|default(0)|round(1) }}%</span>
+                        </div>
+                        <div class="progress-bar-premium">
+                            <div class="progress-fill {% if vps.live_cpu|default(0) > 80 %}danger{% elif vps.live_cpu|default(0) > 60 %}warning{% else %}success{% endif %}" 
+                                 style="width: {{ vps.live_cpu|default(0) }}%;"></div>
+                        </div>
+                    </div>
+                    
+                    <!-- RAM -->
+                    <div class="metric-row">
+                        <div class="metric-header">
+                            <div class="metric-label">
+                                <i class="fas fa-memory" style="color: #11998e;"></i>
+                                <span>RAM</span>
+                            </div>
+                            <span class="metric-value vps-ram" data-id="{{ vps.id }}">{{ vps.live_ram.pct|default(0)|round(1) }}%</span>
+                        </div>
+                        <div class="progress-bar-premium">
+                            <div class="progress-fill {% if vps.live_ram.pct|default(0) > 80 %}danger{% elif vps.live_ram.pct|default(0) > 60 %}warning{% else %}success{% endif %}" 
+                                 style="width: {{ vps.live_ram.pct|default(0) }}%;"></div>
+                        </div>
+                    </div>
+                    
+                    <!-- Disk -->
+                    {% if vps.live_disk and vps.live_disk.pct is defined %}
+                    <div class="metric-row">
+                        <div class="metric-header">
+                            <div class="metric-label">
+                                <i class="fas fa-hdd" style="color: #f093fb;"></i>
+                                <span>Disk</span>
+                            </div>
+                            <span class="metric-value vps-disk" data-id="{{ vps.id }}">{{ vps.live_disk.pct|default(0)|round(1) }}%</span>
+                        </div>
+                        <div class="progress-bar-premium">
+                            <div class="progress-fill {% if vps.live_disk.pct|default(0) > 80 %}danger{% elif vps.live_disk.pct|default(0) > 60 %}warning{% else %}success{% endif %}" 
+                                 style="width: {{ vps.live_disk.pct|default(0) }}%;"></div>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+                {% endif %}
+
+                <!-- Actions -->
+                <div class="action-buttons">
+                    <a href="{{ url_for('vps_detail', vps_id=vps.id) }}" class="action-btn-premium primary">
+                        <i class="fas fa-cog"></i>
+                        <span>Manage</span>
+                    </a>
+                    
+                    {% if vps.live_status == 'running' and not vps.suspended %}
+                    <a href="{{ url_for('vps_console', vps_id=vps.id) }}" class="action-btn-premium outline">
+                        <i class="fas fa-terminal"></i>
+                        <span>Console</span>
+                    </a>
+                    {% endif %}
+                    
+                    <button class="action-btn-premium outline" onclick="controlVPS({{ vps.id }}, '{% if vps.live_status == 'running' %}stop{% else %}start{% endif %}')">
+                        <i class="fas fa-{% if vps.live_status == 'running' %}stop{% else %}play{% endif %}-circle"></i>
+                        <span>{% if vps.live_status == 'running' %}Stop{% else %}Start{% endif %}</span>
+                    </button>
+                </div>
+            </div>
+            {% endfor %}
+        {% else %}
+        <div class="empty-state-premium">
+            <div class="empty-icon-large">
+                <i class="fas fa-server"></i>
+            </div>
+            <h3>No Virtual Private Servers</h3>
+            <p>You haven't created any VPS instances yet. Get started now!</p>
+            {% if current_user.is_admin %}
+            <a href="{{ url_for('admin_vps_create') }}" class="action-btn-premium primary" style="display: inline-flex;">
+                <i class="fas fa-plus-circle"></i>
+                <span>Create Your First VPS</span>
+            </a>
+            {% else %}
+            <p style="color: var(--text-muted); font-size: 0.875rem;">Contact an administrator to create a VPS for you.</p>
+            {% endif %}
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // View switching
+    function switchView(view) {
+        const grid = document.getElementById('vpsGrid');
+        const gridBtn = document.getElementById('gridViewBtn');
+        const listBtn = document.getElementById('listViewBtn');
+        
+        if (view === 'grid') {
+            grid.classList.remove('list-view');
+            gridBtn.classList.add('active');
+            listBtn.classList.remove('active');
+            localStorage.setItem('vpsView', 'grid');
+        } else {
+            grid.classList.add('list-view');
+            listBtn.classList.add('active');
+            gridBtn.classList.remove('active');
+            localStorage.setItem('vpsView', 'list');
+        }
+    }
+    
+    // Load saved view
+    document.addEventListener('DOMContentLoaded', function() {
+        const savedView = localStorage.getItem('vpsView') || 'grid';
+        switchView(savedView);
+    });
+    
+    // Search and filter
+    function filterVPS() {
+        const searchTerm = document.getElementById('searchVPS').value.toLowerCase();
+        const statusFilter = document.getElementById('statusFilter').value;
+        
+        document.querySelectorAll('.vps-card').forEach(card => {
+            const name = card.dataset.name;
+            const ip = card.dataset.ip;
+            const id = card.dataset.id;
+            const status = card.dataset.status;
+            
+            const matchesSearch = name.includes(searchTerm) || 
+                                ip.includes(searchTerm) || 
+                                id.includes(searchTerm);
+            const matchesStatus = statusFilter === 'all' || status === statusFilter;
+            
+            card.style.display = matchesSearch && matchesStatus ? '' : 'none';
+        });
+    }
+    
+    document.getElementById('searchVPS')?.addEventListener('input', filterVPS);
+    document.getElementById('statusFilter')?.addEventListener('change', filterVPS);
+
+    // Show expiring VPS
+    function showExpiringVPS() {
+        const expiringVPS = [];
+        
+        {% for vps in vps_list %}
+        {% if vps.auto_suspend_enabled and vps.expires_at %}
+        {% set expires_dt = vps.expires_at|parse_datetime %}
+        {% if expires_dt %}
+        {% set current_time = now() %}
+        {% set time_diff = (expires_dt - current_time).total_seconds() %}
+        {% set days_left = (time_diff / 86400)|int %}
+        {% if days_left <= 7 %}
+        expiringVPS.push({
+            id: {{ vps.id }},
+            name: '{{ vps.hostname or vps.container_name }}',
+            container: '{{ vps.container_name }}',
+            expires_at: '{{ expires_dt.strftime("%Y-%m-%d %H:%M") }}',
+            days_left: {{ days_left }},
+            hours_left: {{ (time_diff / 3600)|int }},
+            is_expired: {{ 'true' if days_left < 0 else 'false' }},
+            suspended: {{ 'true' if vps.suspended else 'false' }}
+        });
+        {% endif %}
+        {% endif %}
+        {% endif %}
+        {% endfor %}
+        
+        if (expiringVPS.length === 0) {
+            showToast('No VPS expiring soon', 'info');
+            return;
+        }
+        
+        expiringVPS.sort((a, b) => a.days_left - b.days_left);
+        
+        // Build modal HTML
+        let modalHTML = `
+            <h3>
+                <i class="fas fa-exclamation-triangle"></i>
+                <span>Expiring VPS (${expiringVPS.length})</span>
+            </h3>
+            <p style="color: var(--text-muted); margin-bottom: 1.5rem;">
+                Contact an administrator to renew these VPS instances.
+            </p>
+            <div class="modal-expiring-list">
+        `;
+        
+        expiringVPS.forEach(vps => {
+            const statusClass = vps.is_expired ? 'critical' : (vps.days_left <= 3 ? 'warning' : 'info');
+            const statusText = vps.is_expired ? 'EXPIRED' : (vps.days_left === 0 ? vps.hours_left + 'h left' : vps.days_left + 'd left');
+            const badgeClass = vps.is_expired ? 'badge-danger' : (vps.days_left <= 3 ? 'badge-warning' : 'badge-info');
+            
+            modalHTML += `
+                <div class="modal-expiring-item ${statusClass}">
+                    <div class="modal-item-header">
+                        <div>
+                            <div class="modal-item-name">${vps.name}</div>
+                            <div class="modal-item-container">
+                                <i class="fas fa-cube"></i> ${vps.container}
+                            </div>
+                        </div>
+                        <span class="badge ${badgeClass}">${statusText}</span>
+                    </div>
+                    <div class="modal-item-time">
+                        <i class="fas fa-clock"></i>
+                        <span>Expires: ${vps.expires_at}</span>
+                    </div>
+                    ${vps.suspended ? '<div style="margin-bottom: 0.75rem;"><span class="badge badge-danger"><i class="fas fa-ban"></i> Suspended</span></div>' : ''}
+                    <div class="modal-item-actions">
+                        <a href="/vps/${vps.id}" class="action-btn-premium primary" style="flex: 0 0 auto; min-width: auto; padding: 0.625rem 1rem;">
+                            <i class="fas fa-cog"></i>
+                            <span>Manage</span>
+                        </a>
+                    </div>
+                </div>
+            `;
+        });
+        
+        modalHTML += `
+            </div>
+            <div class="modal-footer">
+                <button class="action-btn-premium outline" onclick="this.closest('.modal-overlay').remove()">
+                    <i class="fas fa-times"></i>
+                    <span>Close</span>
+                </button>
+            </div>
+        `;
+        
+        // Create and show modal
+        const modal = document.createElement('div');
+        modal.className = 'modal-overlay';
+        modal.innerHTML = `<div class="modal-content">${modalHTML}</div>`;
+        
+        // Close on overlay click
+        modal.addEventListener('click', function(e) {
+            if (e.target === modal) {
+                modal.remove();
+            }
+        });
+        
+        // Close on Escape key
+        const escapeHandler = function(e) {
+            if (e.key === 'Escape') {
+                modal.remove();
+                document.removeEventListener('keydown', escapeHandler);
+            }
+        };
+        document.addEventListener('keydown', escapeHandler);
+        
+        document.body.appendChild(modal);
+    }
+
+    // VPS Control
+    async function controlVPS(vpsId, action) {
+        if (!confirm('Are you sure you want to ' + action + ' this VPS?')) {
+            return;
+        }
+        
+        showLoading();
+        
+        try {
+            const response = await fetch('/vps/' + vpsId + '/control/' + action, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' }
+            });
+            
+            const result = await response.json();
+            
+            if (result.success) {
+                showToast('VPS ' + action + 'ed successfully', 'success');
+                setTimeout(() => window.location.reload(), 1500);
+            } else {
+                showToast(result.error || 'Failed to ' + action + ' VPS', 'danger');
+            }
+        } catch (error) {
+            console.error('Control error:', error);
+            showToast('Network error: ' + error.message, 'danger');
+        } finally {
+            hideLoading();
+        }
+    }
+
+    // Auto refresh stats
+    if (document.querySelector('.vps-card[data-status="running"]')) {
+        setInterval(async () => {
+            if (!document.hidden) {
+                const runningCards = document.querySelectorAll('.vps-card[data-status="running"]');
+                
+                for (const card of runningCards) {
+                    const vpsId = card.dataset.id;
+                    
+                    try {
+                        const response = await fetch('/vps/' + vpsId + '/stats');
+                        const data = await response.json();
+                        
+                        if (data.success && data.stats) {
+                            const cpuEl = card.querySelector('.vps-cpu[data-id="' + vpsId + '"]');
+                            const ramEl = card.querySelector('.vps-ram[data-id="' + vpsId + '"]');
+                            const diskEl = card.querySelector('.vps-disk[data-id="' + vpsId + '"]');
+                            
+                            if (cpuEl && data.stats.cpu !== undefined) {
+                                cpuEl.textContent = data.stats.cpu.toFixed(1) + '%';
+                                const cpuBar = cpuEl.closest('.metric-row').querySelector('.progress-fill');
+                                if (cpuBar) {
+                                    cpuBar.style.width = data.stats.cpu + '%';
+                                    cpuBar.className = 'progress-fill ' + (data.stats.cpu > 80 ? 'danger' : data.stats.cpu > 60 ? 'warning' : 'success');
+                                }
+                            }
+                            
+                            if (ramEl && data.stats.ram && data.stats.ram.pct !== undefined) {
+                                ramEl.textContent = data.stats.ram.pct.toFixed(1) + '%';
+                                const ramBar = ramEl.closest('.metric-row').querySelector('.progress-fill');
+                                if (ramBar) {
+                                    ramBar.style.width = data.stats.ram.pct + '%';
+                                    ramBar.className = 'progress-fill ' + (data.stats.ram.pct > 80 ? 'danger' : data.stats.ram.pct > 60 ? 'warning' : 'success');
+                                }
+                            }
+                            
+                            if (diskEl && data.stats.disk && data.stats.disk.pct !== undefined) {
+                                diskEl.textContent = data.stats.disk.pct.toFixed(1) + '%';
+                                const diskBar = diskEl.closest('.metric-row').querySelector('.progress-fill');
+                                if (diskBar) {
+                                    diskBar.style.width = data.stats.disk.pct + '%';
+                                    diskBar.className = 'progress-fill ' + (data.stats.disk.pct > 80 ? 'danger' : data.stats.disk.pct > 60 ? 'warning' : 'success');
+                                }
+                            }
+                        }
+                    } catch (error) {
+                        console.error('Stats refresh error:', error);
+                    }
+                }
+            }
+        }, 10000);
+    }
+</script>
+{% endblock %}

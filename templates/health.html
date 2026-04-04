@@ -1,0 +1,334 @@
+<!-- templates/health.html -->
+{% extends "base.html" %}
+
+{% block title %}Health Check - {{ panel_name }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    @keyframes fadeInScale {
+        from {
+            opacity: 0;
+            transform: scale(0.95);
+        }
+        to {
+            opacity: 1;
+            transform: scale(1);
+        }
+    }
+    
+    @keyframes slideInUp {
+        from {
+            opacity: 0;
+            transform: translateY(30px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+    
+    @keyframes pulseSuccess {
+        0%, 100% {
+            box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.4);
+        }
+        50% {
+            box-shadow: 0 0 0 20px rgba(16, 185, 129, 0);
+        }
+    }
+    
+    @keyframes pulseDanger {
+        0%, 100% {
+            box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4);
+        }
+        50% {
+            box-shadow: 0 0 0 20px rgba(239, 68, 68, 0);
+        }
+    }
+    
+    @keyframes rotateIcon {
+        from {
+            transform: rotate(0deg);
+        }
+        to {
+            transform: rotate(360deg);
+        }
+    }
+    
+    @keyframes slideInLeft {
+        from {
+            opacity: 0;
+            transform: translateX(-20px);
+        }
+        to {
+            opacity: 1;
+            transform: translateX(0);
+        }
+    }
+    
+    .health-container {
+        animation: fadeInScale 0.5s ease-out;
+    }
+    
+    .card {
+        animation: slideInUp 0.5s ease-out;
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+    
+    .card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+    }
+    
+    .bg-success.bg-opacity-10,
+    .bg-danger.bg-opacity-10 {
+        transition: all 0.3s ease;
+        animation: pulseSuccess 2s ease-in-out infinite;
+    }
+    
+    .bg-danger.bg-opacity-10 {
+        animation: pulseDanger 2s ease-in-out infinite;
+    }
+    
+    .bg-success.bg-opacity-10:hover,
+    .bg-danger.bg-opacity-10:hover {
+        transform: scale(1.1);
+        animation: none;
+    }
+    
+    .bg-dark.rounded {
+        transition: all 0.3s ease;
+        animation: slideInUp 0.5s ease-out 0.2s backwards;
+    }
+    
+    .bg-dark.rounded:hover {
+        transform: scale(1.01);
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+    }
+    
+    .list-group-item {
+        transition: all 0.3s ease;
+        animation: slideInLeft 0.4s ease-out backwards;
+    }
+    
+    .list-group-item:nth-child(1) { animation-delay: 0.1s; }
+    .list-group-item:nth-child(2) { animation-delay: 0.2s; }
+    .list-group-item:nth-child(3) { animation-delay: 0.3s; }
+    
+    .list-group-item:hover {
+        transform: translateX(5px);
+        background-color: rgba(59, 130, 246, 0.05) !important;
+    }
+    
+    pre {
+        transition: all 0.3s ease;
+    }
+    
+    pre:hover {
+        transform: scale(1.01);
+    }
+    
+    .badge {
+        transition: all 0.3s ease;
+    }
+    
+    .badge:hover {
+        transform: scale(1.05);
+    }
+    
+    @keyframes spin {
+        from { transform: rotate(0deg); }
+        to { transform: rotate(360deg); }
+    }
+    
+    .fa-spin-slow {
+        animation: spin 3s linear infinite;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center health-container">
+    <div class="col-12 col-md-8 col-lg-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-heartbeat me-2" style="color: var(--accent-primary);"></i>
+                    System Health
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="text-center mb-4">
+                    {% if status == 'ok' %}
+                    <div class="bg-success bg-opacity-10 p-3 rounded-circle d-inline-block">
+                        <i class="bi bi-check-circle-fill text-success fs-1"></i>
+                    </div>
+                    <h4 class="mt-3 text-success">All Systems Operational</h4>
+                    <p class="text-secondary">All components are functioning normally</p>
+                    {% else %}
+                    <div class="bg-danger bg-opacity-10 p-3 rounded-circle d-inline-block">
+                        <i class="bi bi-exclamation-triangle-fill text-danger fs-1"></i>
+                    </div>
+                    <h4 class="mt-3 text-danger">System Issues Detected</h4>
+                    <p class="text-secondary">Some components require attention</p>
+                    {% endif %}
+                </div>
+                
+                <div class="bg-dark p-3 rounded">
+                    <pre class="mb-0 text-light" style="white-space: pre-wrap; font-family: 'Courier New', monospace; font-size: 0.85rem;">{{ health_data|tojson(indent=2) }}</pre>
+                </div>
+                
+                <div class="mt-4">
+                    <h6 class="mb-3">
+                        <i class="fas fa-microchip me-2" style="color: var(--accent-primary);"></i>
+                        System Components
+                    </h6>
+                    <ul class="list-group list-group-flush bg-transparent">
+                        <li class="list-group-item bg-transparent d-flex justify-content-between align-items-center px-0">
+                            <span>
+                                <i class="fas fa-database me-2" style="color: var(--accent-info);"></i>
+                                Database
+                            </span>
+                            {% if health_data.database == 'ok' %}
+                            <span class="badge bg-success">
+                                <i class="fas fa-check-circle me-1"></i> Connected
+                            </span>
+                            {% else %}
+                            <span class="badge bg-danger">
+                                <i class="fas fa-exclamation-circle me-1"></i> Error
+                            </span>
+                            {% endif %}
+                        </li>
+                        <li class="list-group-item bg-transparent d-flex justify-content-between align-items-center px-0">
+                            <span>
+                                <i class="fas fa-box me-2" style="color: var(--accent-success);"></i>
+                                LXC
+                            </span>
+                            {% if health_data.lxc %}
+                            <span class="badge bg-success">
+                                <i class="fas fa-check-circle me-1"></i> Available
+                            </span>
+                            {% else %}
+                            <span class="badge bg-warning">
+                                <i class="fas fa-question-circle me-1"></i> Unknown
+                            </span>
+                            {% endif %}
+                        </li>
+                        <li class="list-group-item bg-transparent d-flex justify-content-between align-items-center px-0">
+                            <span>
+                                <i class="fas fa-code me-2" style="color: var(--accent-warning);"></i>
+                                API
+                            </span>
+                            <span class="badge bg-success">
+                                <i class="fas fa-check-circle me-1"></i> Operational
+                            </span>
+                        </li>
+                    </ul>
+                </div>
+                
+                <div class="mt-4 pt-3 border-top border-secondary">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <small class="text-secondary">
+                            <i class="fas fa-clock me-1"></i>
+                            Last checked: {{ now().strftime('%Y-%m-%d %H:%M:%S') }}
+                        </small>
+                        <button class="btn btn-sm btn-outline" onclick="window.location.reload()">
+                            <i class="fas fa-sync-alt"></i>
+                            Refresh
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .btn-accent {
+        background: var(--accent-primary);
+        border-color: var(--accent-primary);
+        color: white;
+    }
+    
+    .btn-accent:hover {
+        background: #2563eb;
+        border-color: #2563eb;
+        color: white;
+    }
+    
+    /* Health check specific animations */
+    @keyframes heartbeat {
+        0% {
+            transform: scale(1);
+        }
+        14% {
+            transform: scale(1.3);
+        }
+        28% {
+            transform: scale(1);
+        }
+        42% {
+            transform: scale(1.3);
+        }
+        70% {
+            transform: scale(1);
+        }
+    }
+    
+    .fa-heartbeat {
+        animation: heartbeat 1.5s ease-in-out infinite;
+    }
+</style>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Add auto-refresh functionality (every 30 seconds)
+        let autoRefresh = true;
+        let refreshInterval;
+        
+        function startAutoRefresh() {
+            if (refreshInterval) clearInterval(refreshInterval);
+            refreshInterval = setInterval(() => {
+                if (autoRefresh && !document.hidden) {
+                    window.location.reload();
+                }
+            }, 30000);
+        }
+        
+        function stopAutoRefresh() {
+            if (refreshInterval) {
+                clearInterval(refreshInterval);
+                refreshInterval = null;
+            }
+        }
+        
+        // Start auto-refresh
+        startAutoRefresh();
+        
+        // Stop auto-refresh when page is hidden
+        document.addEventListener('visibilitychange', function() {
+            if (document.hidden) {
+                stopAutoRefresh();
+            } else {
+                startAutoRefresh();
+            }
+        });
+        
+        // Add hover effect to refresh button
+        const refreshBtn = document.querySelector('.btn-outline');
+        if (refreshBtn) {
+            refreshBtn.addEventListener('click', function(e) {
+                e.preventDefault();
+                // Add rotation animation
+                const icon = this.querySelector('i');
+                icon.style.animation = 'spin 0.5s ease';
+                setTimeout(() => {
+                    icon.style.animation = '';
+                }, 500);
+                setTimeout(() => {
+                    window.location.reload();
+                }, 100);
+            });
+        }
+    });
+</script>
+{% endblock %}

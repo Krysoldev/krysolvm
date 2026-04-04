@@ -9,6 +9,7 @@ MAGENTA='\033[1;35m'
 NC='\033[0m'
 
 BASE_URL="https://raw.githubusercontent.com/Krysoldev/krysolvm/main"
+INSTALL_DIR="$HOME/.krysolvm"
 
 FILES=(
 "ui.sh"
@@ -21,21 +22,25 @@ FILES=(
 "uninstall_panel.sh"
 )
 
-# Download all scripts
+# Create hidden directory
+mkdir -p "$INSTALL_DIR"
+cd "$INSTALL_DIR"
+
+# Download scripts
 download_files() {
-    echo -e "${CYAN}[+] Fetching latest scripts...${NC}"
+    echo -e "${CYAN}[+] Loading system files...${NC}"
 
     for file in "${FILES[@]}"; do
         curl -s -o "$file" "$BASE_URL/$file"
         chmod +x "$file"
     done
 
-    echo -e "${GREEN}[✓] All files loaded${NC}"
+    echo -e "${GREEN}[✓] System Ready${NC}"
 }
 
 # Load UI
 load_ui() {
-    source ./ui.sh
+    source "$INSTALL_DIR/ui.sh"
 }
 
 # MENU
@@ -61,6 +66,10 @@ echo -e "${CYAN}╰────────────────────�
 download_files
 load_ui
 
+# Self-delete original script (stealth mode)
+SCRIPT_PATH="$(realpath "$0" 2>/dev/null)"
+[ -f "$SCRIPT_PATH" ] && rm -f "$SCRIPT_PATH" 2>/dev/null
+
 # LOOP
 while true; do
     banner
@@ -72,13 +81,13 @@ while true; do
     loading_bar
 
     case "$choice" in
-        1) bash install_panel.sh ;;
-        2) bash install_requirements.sh ;;
-        3) bash start_panel.sh ;;
-        4) bash stop_panel.sh ;;
-        5) bash status_panel.sh ;;
-        6) bash install_lxc.sh ;;
-        7) bash uninstall_panel.sh ;;
+        1) bash "$INSTALL_DIR/install_panel.sh" ;;
+        2) bash "$INSTALL_DIR/install_requirements.sh" ;;
+        3) bash "$INSTALL_DIR/start_panel.sh" ;;
+        4) bash "$INSTALL_DIR/stop_panel.sh" ;;
+        5) bash "$INSTALL_DIR/status_panel.sh" ;;
+        6) bash "$INSTALL_DIR/install_lxc.sh" ;;
+        7) bash "$INSTALL_DIR/uninstall_panel.sh" ;;
         0)
             echo -e "${GREEN}✔ Installer Closed Safely${NC}"
             sleep 1

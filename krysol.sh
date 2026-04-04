@@ -46,7 +46,7 @@ load_ui() {
 # MENU
 menu() {
 echo -e "${CYAN}╭────────────────────────────────────╮${NC}"
-echo -e "${CYAN}│ ${MAGENTA}⚡ KRYsolVM Control Panel ⚡${CYAN}   │${NC}"
+echo -e "${CYAN}│ ${MAGENTA}⚡ KRYSOLVM Control Panel ⚡${CYAN}   │${NC}"
 echo -e "${CYAN}├────────────────────────────────────┤${NC}"
 
 echo -e "${CYAN}│ ${GREEN}[1] Install Panel           ${CYAN}│${NC}"

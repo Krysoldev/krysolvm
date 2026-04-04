@@ -27,7 +27,7 @@ echo -e "${CYAN}[+] Creating service...${NC}"
 
 cat <<EOF > /etc/systemd/system/krysolvm.service
 [Unit]
-Description=KRYsolVM Panel
+Description=KRYSOLVM Panel
 After=network.target
 
 [Service]

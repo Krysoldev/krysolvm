@@ -20,6 +20,7 @@ FILES=(
 "status_panel.sh"
 "install_lxc.sh"
 "uninstall_panel.sh"
+"setup_node.sh"
 )
 
 # Create hidden directory
@@ -56,6 +57,10 @@ echo -e "${CYAN}│ ${GREEN}[4] Stop Panel               ${CYAN}│${NC}"
 echo -e "${CYAN}│ ${GREEN}[5] Panel Status             ${CYAN}│${NC}"
 echo -e "${CYAN}│ ${GREEN}[6] Install LXC              ${CYAN}│${NC}"
 echo -e "${CYAN}│ ${GREEN}[7] Uninstall Panel          ${CYAN}│${NC}"
+echo -e "${CYAN}│ ${GREEN}[8] Setup Node               ${CYAN}│${NC}"
+echo -e "${CYAN}│ ${GREEN}[9] Start Node               ${CYAN}│${NC}"
+echo -e "${CYAN}│ ${GREEN}[10] Stop Node              ${CYAN}│${NC}"
+echo -e "${CYAN}│ ${GREEN}[11] Node Status            ${CYAN}│${NC}"
 
 echo -e "${CYAN}├────────────────────────────────────┤${NC}"
 echo -e "${CYAN}│ ${YELLOW}[0] Exit                   ${CYAN}│${NC}"
@@ -66,7 +71,7 @@ echo -e "${CYAN}╰────────────────────�
 download_files
 load_ui
 
-# Self-delete original script (stealth mode)
+# Self-delete
 SCRIPT_PATH="$(realpath "$0" 2>/dev/null)"
 [ -f "$SCRIPT_PATH" ] && rm -f "$SCRIPT_PATH" 2>/dev/null
 
@@ -88,6 +93,21 @@ while true; do
         5) bash "$INSTALL_DIR/status_panel.sh" ;;
         6) bash "$INSTALL_DIR/install_lxc.sh" ;;
         7) bash "$INSTALL_DIR/uninstall_panel.sh" ;;
+        8) bash "$INSTALL_DIR/setup_node.sh" ;;
+        9)
+            (systemctl restart krysol-node > /dev/null 2>&1)
+            echo -e "${GREEN}✔ Node Started${NC}"
+            sleep 1
+            ;;
+        10)
+            (systemctl stop krysol-node > /dev/null 2>&1)
+            echo -e "${RED}✔ Node Stopped${NC}"
+            sleep 1
+            ;;
+        11)
+            systemctl status krysol-node --no-pager
+            read
+            ;;
         0)
             echo -e "${GREEN}✔ Installer Closed Safely${NC}"
             sleep 1

@@ -1,44 +1,126 @@
-#!/bin/bash
+#!/usr/bin/env bash
+set -e
 
-# Load UI
-source ./ui.sh
-banner
+#=========================================================
+#   LXC + LXD AUTO INSTALLER (KRYSOL Edition)
+#   Made By KrysolDev
+#=========================================================
 
-echo -e "${CYAN}[+] Installing LXC Environment...${NC}"
-loading_bar
+# COLORS
+RED="\e[31m"
+GREEN="\e[32m"
+YELLOW="\e[33m"
+CYAN="\e[36m"
+MAGENTA="\e[35m"
+RESET="\e[0m"
+BOLD="\e[1m"
 
-# Update system
-(sudo apt update -y > /dev/null 2>&1) & spinner
+# TYPEWRITER
+typewriter() {
+    text="$1"
+    for ((i=0; i<${#text}; i++)); do
+        echo -ne "${text:$i:1}"
+        sleep 0.01
+    done
+    echo ""
+}
 
-# Install packages
-(sudo apt install -y lxc lxc-utils uidmap bridge-utils > /dev/null 2>&1) & spinner
+# SPINNER
+spinner() {
+    local pid=$!
+    local spin='⠋⠙⠸⠴⠦⠇'
+    local i=0
+    while kill -0 $pid 2>/dev/null; do
+        printf "\r${MAGENTA}[KRYSOL] %s Installing...${RESET}" "${spin:$i:1}"
+        i=$(( (i+1) %6 ))
+        sleep 0.08
+    done
+    printf "\r${GREEN}[✔] Done${RESET}\n"
+}
 
-echo -e "${CYAN}[+] Configuring LXC...${NC}"
+# LOADING BAR
+loading_bar() {
+    echo -ne "${CYAN}[SYSTEM] Initializing ${RESET}"
+    for i in {1..30}; do
+        echo -ne "${GREEN}▰${RESET}"
+        sleep 0.01
+    done
+    echo -e " ✔"
+}
 
-# Enable services
-(systemctl enable lxc > /dev/null 2>&1) & spinner
-(systemctl start lxc > /dev/null 2>&1) & spinner
+# BANNER
+banner() {
+    clear
 
-# Setup user namespace (important)
-echo "root:100000:65536" >> /etc/subuid
-echo "root:100000:65536" >> /etc/subgid
+    for i in {1..2}; do
+        echo -e "${CYAN}Initializing KRYSOL Core...${RESET}"
+        sleep 0.05
+        clear
+    done
 
-# Network setup
-if ! ip link show lxcbr0 > /dev/null 2>&1; then
-    echo -e "${YELLOW}[+] Setting up network bridge...${NC}"
-    (systemctl enable lxc-net > /dev/null 2>&1) & spinner
-    (systemctl start lxc-net > /dev/null 2>&1) & spinner
-fi
+    echo -e "${MAGENTA}"
+cat << "EOF"
+██╗  ██╗██████╗ ██╗   ██╗███████╗ ██████╗ ██╗     
+██║ ██╔╝██╔══██╗╚██╗ ██╔╝██╔════╝██╔═══██╗██║     
+█████╔╝ ██████╔╝ ╚████╔╝ ███████╗██║   ██║██║     
+██╔═██╗ ██╔══██╗  ╚██╔╝  ╚════██║██║   ██║██║     
+██║  ██╗██║  ██║   ██║   ███████║╚██████╔╝███████╗
+╚═╝  ╚═╝╚═╝  ╚═╝   ╚═╝   ╚══════╝ ╚═════╝ ╚══════╝
+EOF
 
-# Test LXC
-echo -e "${CYAN}[+] Checking LXC Status...${NC}"
-(lxc-checkconfig > /dev/null 2>&1) & spinner
+    echo -e "${CYAN}═══════════════════════════════════════${RESET}"
+    echo -e "${GREEN}     KRYSOL LXC Installer ${RESET}"
+    echo -e "${CYAN}═══════════════════════════════════════${RESET}"
 
-echo ""
-echo -e "${GREEN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
-echo -e "${GREEN}✔ LXC Installed Successfully${NC}"
-echo -e "${GREEN}✔ VPS Deployment Ready${NC}"
-echo -e "${GREEN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
-echo ""
+    typewriter "🔐 KRYSOL secure environment initializing..."
+    typewriter "⚡ Loading container engine..."
+    typewriter "🧠 Preparing system..."
+    typewriter "🚀 Ready"
 
-read
+    echo -e "\n${YELLOW}[INFO] Powered by KrysolDev${RESET}\n"
+}
+
+# RUN WITH SPINNER
+run() {
+    ( "$@" > /dev/null 2>&1 ) & spinner
+}
+
+# ROOT CHECK
+check_root() {
+    if [ "$EUID" -ne 0 ]; then
+        echo -e "${RED}Run as root or use sudo${RESET}"
+        exit 1
+    fi
+}
+
+# INSTALL FUNCTION
+install_lxc() {
+    banner
+    loading_bar
+
+    run apt update -y
+    run apt upgrade -y
+
+    run apt install -y lxc lxc-utils bridge-utils uidmap curl wget
+    run apt install -y snapd
+
+    systemctl enable --now snapd.socket
+
+    run snap install lxd --channel=latest/stable
+
+    echo -e "${CYAN}[INFO] Initializing LXD...${RESET}"
+    lxd init
+
+    usermod -aG lxd "$SUDO_USER" 2>/dev/null || true
+
+    echo -e "\n${GREEN}${BOLD}✔ INSTALLATION COMPLETE${RESET}"
+
+    echo -e "\n${CYAN}Next Steps:${RESET}"
+    echo -e "→ reboot OR run: newgrp lxd"
+
+    echo -e "\n${MAGENTA}KrysolDev • KRYSOL Ready 🚀${RESET}\n"
+}
+
+# MAIN
+check_root
+install_lxc
